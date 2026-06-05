@@ -19,6 +19,7 @@ export const config = {
   discordToken: requireEnv('DISCORD_TOKEN'),
   clientId: readEnv('DISCORD_CLIENT_ID'),
   guildId: readEnv('DISCORD_GUILD_ID'),
+  welcomeChannelId: readEnv('WELCOME_CHANNEL_ID') ?? '1350095949896093764',
   communityName: readEnv('COMMUNITY_NAME') ?? 'Interface Society',
   communityDescription:
     readEnv('COMMUNITY_DESCRIPTION') ??

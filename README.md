@@ -8,6 +8,7 @@ A Discord.js bot starter for the Interface Society community, ready to run local
 - Runs a long-lived Discord bot process for Railway.
 - Keeps secrets in environment variables instead of files.
 - Includes `/ping`, `/about`, `/server`, and `/help`.
+- Includes `/postwelcome` for administrators to post the Interface Society welcome message.
 
 ## Local Setup
 
@@ -23,15 +24,18 @@ A Discord.js bot starter for the Interface Society community, ready to run local
    DISCORD_TOKEN=...
    DISCORD_CLIENT_ID=...
    DISCORD_GUILD_ID=...
+   WELCOME_CHANNEL_ID=1350095949896093764
    ```
 
-3. Register slash commands:
+4. Add your welcome header image at `assets/IFS_Welcome_Header.png`.
+
+5. Register slash commands:
 
    ```bash
    npm run deploy:commands
    ```
 
-4. Start the bot:
+6. Start the bot:
 
    ```bash
    npm start
@@ -58,6 +62,7 @@ https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=0&scop
    ```text
    DISCORD_TOKEN
    DISCORD_CLIENT_ID
+   WELCOME_CHANNEL_ID
    COMMUNITY_NAME
    COMMUNITY_DESCRIPTION
    ```
