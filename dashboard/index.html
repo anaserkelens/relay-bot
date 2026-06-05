@@ -20,8 +20,11 @@
           </label>
           <div class="login-actions">
             <button id="login-button" type="submit">Log in</button>
-            <button id="basic-login-button" class="secondary" type="button">Basic login</button>
+            <button id="basic-login-button" class="secondary" type="submit" formaction="/login" formmethod="post">
+              Basic login
+            </button>
           </div>
+          <p id="api-status" class="api-status" role="status">Checking dashboard API...</p>
           <p id="login-error" class="error" role="status"></p>
         </form>
       </section>

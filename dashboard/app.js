@@ -4,6 +4,7 @@ const loginForm = document.querySelector('#login-form');
 const loginError = document.querySelector('#login-error');
 const loginButton = document.querySelector('#login-button');
 const basicLoginButton = document.querySelector('#basic-login-button');
+const apiStatus = document.querySelector('#api-status');
 const passwordInput = document.querySelector('#password');
 const logoutButton = document.querySelector('#logout');
 const botStatus = document.querySelector('#bot-status');
@@ -39,6 +40,8 @@ init();
 async function init() {
   bindEvents();
 
+  checkApiStatus();
+
   const session = await api('/api/session').catch(() => null);
 
   if (session?.ok) {
@@ -50,7 +53,6 @@ async function init() {
 
 function bindEvents() {
   loginForm.addEventListener('submit', handleLogin);
-  basicLoginButton.addEventListener('click', handleBasicLogin);
   logoutButton.addEventListener('click', handleLogout);
   composer.addEventListener('submit', handleSend);
   imageInput.addEventListener('change', handleImageChange);
@@ -61,6 +63,11 @@ function bindEvents() {
 }
 
 async function handleLogin(event) {
+  if (event.submitter === basicLoginButton) {
+    passwordInput.value = passwordInput.value.trim();
+    return;
+  }
+
   event.preventDefault();
   loginError.textContent = '';
   loginButton.disabled = true;
@@ -73,7 +80,7 @@ async function handleLogin(event) {
 
     await api('/api/login', {
       method: 'POST',
-      body: { password: passwordInput.value },
+      body: { password: passwordInput.value.trim() },
     });
 
     const session = await api('/api/session').catch(() => null);
@@ -92,13 +99,18 @@ async function handleLogin(event) {
   }
 }
 
-function handleBasicLogin() {
-  if (!passwordInput.reportValidity()) {
-    return;
-  }
+async function checkApiStatus() {
+  setApiStatus(`Checking API on ${window.location.origin}...`, '');
 
-  loginError.textContent = 'Submitting basic login...';
-  HTMLFormElement.prototype.submit.call(loginForm);
+  try {
+    const health = await api('/health');
+    const ping = await api('/api/ping');
+    const botText = ping.botReady || health.botReady ? `Bot online${ping.tag ? `: ${ping.tag}` : ''}` : 'Bot not ready';
+
+    setApiStatus(`API connected. ${botText}.`, 'success');
+  } catch (error) {
+    setApiStatus(`API check failed on ${window.location.origin}: ${error.message}`, 'error');
+  }
 }
 
 async function handleLogout() {
@@ -284,6 +296,12 @@ function setSendStatus(message, type) {
   sendStatus.textContent = message;
   sendStatus.classList.toggle('success', type === 'success');
   sendStatus.classList.toggle('error', type === 'error');
+}
+
+function setApiStatus(message, type) {
+  apiStatus.textContent = message;
+  apiStatus.classList.toggle('success', type === 'success');
+  apiStatus.classList.toggle('error', type === 'error');
 }
 
 function readFileAsDataUrl(file) {

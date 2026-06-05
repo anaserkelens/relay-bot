@@ -105,7 +105,7 @@ async function handleLogin(client, request, response) {
   console.log('Dashboard login API request received.');
   const body = await readJsonBody(request, 64 * 1024);
 
-  if (String(body.password || '') !== config.dashboard.password) {
+  if (!isDashboardPassword(String(body.password || ''))) {
     console.warn('Dashboard login failed.');
     sendJson(response, 401, { error: 'Invalid password.' });
     return;
@@ -123,7 +123,7 @@ async function handleClassicLogin(client, request, response) {
   console.log('Dashboard basic login request received.');
   const body = await readFormBody(request, 64 * 1024);
 
-  if (String(body.password || '') !== config.dashboard.password) {
+  if (!isDashboardPassword(String(body.password || ''))) {
     console.warn('Dashboard basic login failed.');
     redirect(response, '/?loginError=invalid');
     return;
@@ -319,6 +319,10 @@ function setCookie(response, name, value, options = {}) {
 
 function isSecureRequest(request) {
   return request.headers['x-forwarded-proto'] === 'https' || request.socket.encrypted;
+}
+
+function isDashboardPassword(value) {
+  return value.trim() === config.dashboard.password;
 }
 
 function shouldLogDashboardRequest(method, pathname) {
