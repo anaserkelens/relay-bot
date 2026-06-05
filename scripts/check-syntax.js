@@ -24,6 +24,7 @@ function collectJavaScriptFiles(directory) {
 
 const files = [
   ...collectJavaScriptFiles('commands'),
+  ...collectJavaScriptFiles('dashboard'),
   ...collectJavaScriptFiles('events'),
   ...collectJavaScriptFiles('scripts'),
   ...collectJavaScriptFiles('utils'),

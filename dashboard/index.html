@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Relay Dashboard</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section id="login-view" class="login-panel" hidden>
+        <form id="login-form" class="login-form">
+          <div>
+            <p class="eyebrow">Interface Society</p>
+            <h1>Relay Dashboard</h1>
+          </div>
+          <label>
+            Dashboard password
+            <input id="password" type="password" autocomplete="current-password" required />
+          </label>
+          <button type="submit">Log in</button>
+          <p id="login-error" class="error" role="status"></p>
+        </form>
+      </section>
+
+      <section id="dashboard-view" class="dashboard" hidden>
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Interface Society</p>
+            <h1>Message Composer</h1>
+          </div>
+          <div class="status-cluster">
+            <span id="bot-status" class="status-pill">Checking</span>
+            <button id="logout" class="secondary" type="button">Log out</button>
+          </div>
+        </header>
+
+        <section class="workspace">
+          <form id="composer" class="composer">
+            <div class="form-grid">
+              <label class="field span-2">
+                Channel ID
+                <input id="channel-id" name="channelId" inputmode="numeric" placeholder="1350095949896093764" required />
+              </label>
+
+              <label class="field">
+                Header image
+                <input id="image-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
+              </label>
+
+              <label class="toggle-row">
+                <input id="allow-mentions" type="checkbox" />
+                <span>Allow mentions</span>
+              </label>
+            </div>
+
+            <div class="toolbar-row">
+              <h2>Text Sections</h2>
+              <button id="add-section" class="secondary" type="button">Add Text</button>
+            </div>
+            <div id="sections" class="stack"></div>
+
+            <div class="toolbar-row">
+              <h2>Buttons</h2>
+              <button id="add-button" class="secondary" type="button">Add Button</button>
+            </div>
+            <div id="buttons" class="stack"></div>
+
+            <div class="action-row">
+              <button id="send" type="submit">Send Message</button>
+              <p id="send-status" class="send-status" role="status"></p>
+            </div>
+          </form>
+
+          <aside class="preview-panel">
+            <div class="toolbar-row">
+              <h2>Preview</h2>
+              <span id="section-count" class="muted">0 sections</span>
+            </div>
+            <div class="discord-preview">
+              <img id="preview-image" alt="" hidden />
+              <div id="preview-sections"></div>
+              <div id="preview-buttons" class="preview-buttons"></div>
+            </div>
+          </aside>
+        </section>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

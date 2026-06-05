@@ -3,6 +3,7 @@ const { Client, Collection, GatewayIntentBits, Partials } = require('discord.js'
 const { config } = require('./utils/config');
 const { loadCommands } = require('./utils/loadCommands');
 const { loadEvents } = require('./utils/loadEvents');
+const { startDashboard } = require('./utils/dashboardServer');
 
 function buildIntents() {
   const intents = [
@@ -58,4 +59,5 @@ process.on('unhandledRejection', (error) => {
 });
 
 console.log(`Starting ${config.communityName} Relay bot...`);
+startDashboard(client);
 client.login(config.discordToken);

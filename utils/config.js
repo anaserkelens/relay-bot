@@ -93,6 +93,13 @@ const config = {
     titleKeyword: readEnv('STREAM_TITLE_KEYWORD') || 'INTERFACE SOCIETY',
     gameNameIncludes: readEnv('STREAM_GAME_NAME_INCLUDES'),
   },
+  dashboard: {
+    enabled: readBoolean('DASHBOARD_ENABLED', true),
+    password: readEnv('DASHBOARD_PASSWORD'),
+    port: readInteger('DASHBOARD_PORT', Number.parseInt(process.env.PORT, 10) || 3000),
+    maxBodyBytes: readInteger('DASHBOARD_MAX_BODY_MB', 12) * 1024 * 1024,
+    maxUploadBytes: readInteger('DASHBOARD_MAX_UPLOAD_MB', 8) * 1024 * 1024,
+  },
 };
 
 config.intents = {

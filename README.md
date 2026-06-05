@@ -8,6 +8,7 @@ A Discord.js bot starter for the Interface Society community, ready to run local
 - Runs a long-lived Discord bot process for Railway.
 - Keeps secrets in environment variables instead of files.
 - Uses the same folder shape as the reference bot: `commands`, `events`, `images`, and `utils`.
+- Includes a protected browser dashboard for sending Components v2 messages instantly.
 - Includes `/ping`, `/about`, `/server`, `/help`, `/clear`, `/postwelcome`, `/ticketsetup`, `/setupreactionrole`, and `/teststream`.
 - Includes optional event systems for tickets, member logs, message logs, channel logs, scheduled event logs, moderation logs, user logs, invite moderation, reaction roles, and stream monitoring.
 
@@ -27,6 +28,7 @@ A Discord.js bot starter for the Interface Society community, ready to run local
    DISCORD_GUILD_ID=...
    WELCOME_CHANNEL_ID=1350095949896093764
    AUTO_REGISTER_COMMANDS=true
+   DASHBOARD_PASSWORD=...
    ```
 
 3. Add your welcome header image at `images/IFS_Welcome_Header.png`.
@@ -93,20 +95,32 @@ Slash commands are synced on startup. If `DISCORD_GUILD_ID` is set, commands upd
 
 Optional systems are controlled by environment variables. For example, tickets need `TICKET_CHANNEL_ID`, ticket logs need `TICKET_LOG_CHANNEL_ID`, and reaction roles need `REACTION_ROLE_MESSAGE_ID`, `REACTION_ROLE_EMOJI_ID`, and `VERIFIED_ROLE_ID`. See [.env.example](.env.example) for the full list.
 
+## Dashboard
+
+Set `DASHBOARD_PASSWORD` in Railway to enable the browser dashboard. Railway will expose it at your service URL:
+
+```text
+https://your-service.up.railway.app/
+```
+
+The dashboard sends messages through the running bot, so no restart or slash command is needed. The bot must already be online, and it must have permission to send messages and attach files in the target channel.
+
 ## Adding Commands
 
 Create a new file in `commands` that exports:
 
 ```js
-import { SlashCommandBuilder } from 'discord.js';
+const { SlashCommandBuilder } = require('discord.js');
 
-export const data = new SlashCommandBuilder()
+const data = new SlashCommandBuilder()
   .setName('example')
   .setDescription('Describe the command.');
 
-export async function execute(interaction) {
+async function execute(interaction) {
   await interaction.reply('Hello from Interface Society.');
 }
+
+module.exports = { data, execute };
 ```
 
 Then run:
