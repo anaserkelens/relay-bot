@@ -549,7 +549,6 @@ textarea:focus {
   gap: 10px;
 }
 
-.send-status,
 .error,
 .api-status {
   color: var(--muted);
@@ -559,14 +558,87 @@ textarea:focus {
 }
 
 .error,
-.send-status.error,
 .api-status.error {
   color: var(--red);
 }
 
-.send-status.success,
 .api-status.success {
   color: var(--green);
+}
+
+.toast-region {
+  position: fixed;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  z-index: 100;
+  display: grid;
+  gap: 10px;
+  width: min(380px, calc(100vw - 36px));
+  pointer-events: none;
+}
+
+.toast {
+  position: relative;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--line-bright);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.48)),
+    rgba(255, 255, 255, 0.72);
+  box-shadow: var(--shadow), var(--inner-light);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.4;
+  padding: 14px 74px 14px 16px;
+  pointer-events: auto;
+  animation: toast-in 220ms ease-out both;
+  backdrop-filter: blur(28px) saturate(1.45);
+  -webkit-backdrop-filter: blur(28px) saturate(1.45);
+}
+
+.toast.success {
+  border-color: rgba(19, 166, 111, 0.22);
+}
+
+.toast.error {
+  border-color: rgba(214, 66, 85, 0.22);
+}
+
+.toast.is-hiding {
+  animation: toast-out 180ms ease-in both;
+}
+
+.toast-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  min-height: 30px;
+  padding: 0 10px;
+  box-shadow: none;
+  font-size: 12px;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0) scale(0.98);
+  }
 }
 
 .discord-preview {

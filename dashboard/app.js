@@ -29,7 +29,7 @@ const addButtonButton = document.querySelector('#add-button');
 const newMessageButton = document.querySelector('#new-message');
 const saveMessageButton = document.querySelector('#save-message');
 const sendButton = document.querySelector('#send');
-const sendStatus = document.querySelector('#send-status');
+const toastRegion = document.querySelector('#toast-region');
 const previewImage = document.querySelector('#preview-image');
 const previewSections = document.querySelector('#preview-sections');
 const previewButtons = document.querySelector('#preview-buttons');
@@ -711,9 +711,38 @@ function updatePreview() {
 }
 
 function setSendStatus(message, type) {
-  sendStatus.textContent = message;
-  sendStatus.classList.toggle('success', type === 'success');
-  sendStatus.classList.toggle('error', type === 'error');
+  if (!message) {
+    return;
+  }
+
+  showToast(message, type);
+}
+
+function showToast(message, type = '') {
+  const toast = document.createElement('section');
+  const close = document.createElement('button');
+
+  toast.className = `toast ${type === 'error' ? 'error' : 'success'}`;
+  toast.setAttribute('role', 'status');
+  toast.textContent = message;
+  close.className = 'toast-close';
+  close.type = 'button';
+  close.setAttribute('aria-label', 'Dismiss notification');
+  close.textContent = 'Close';
+  close.addEventListener('click', () => dismissToast(toast));
+  toast.append(close);
+  toastRegion.append(toast);
+
+  window.setTimeout(() => dismissToast(toast), type === 'error' ? 7000 : 4500);
+}
+
+function dismissToast(toast) {
+  if (!toast.isConnected || toast.classList.contains('is-hiding')) {
+    return;
+  }
+
+  toast.classList.add('is-hiding');
+  window.setTimeout(() => toast.remove(), 220);
 }
 
 function setApiStatus(message, type) {
