@@ -1,6 +1,6 @@
 import { EmbedBuilder, SlashCommandBuilder } from 'discord.js';
 
-import { config } from '../lib/config.js';
+import { config } from '../utils/config.js';
 
 export const data = new SlashCommandBuilder()
   .setName('about')

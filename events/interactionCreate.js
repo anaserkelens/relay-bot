@@ -1,26 +1,8 @@
-import { Client, Collection, Events, GatewayIntentBits, MessageFlags } from 'discord.js';
+import { Events, MessageFlags } from 'discord.js';
 
-import { config } from './lib/config.js';
-import { loadCommands } from './lib/loadCommands.js';
+export const name = Events.InteractionCreate;
 
-const client = new Client({
-  intents: [GatewayIntentBits.Guilds],
-});
-
-client.commands = new Collection();
-
-const commands = await loadCommands();
-
-for (const command of commands) {
-  client.commands.set(command.data.name, command);
-}
-
-client.once(Events.ClientReady, (readyClient) => {
-  console.log(`Logged in as ${readyClient.user.tag}`);
-  console.log(`Loaded ${client.commands.size} slash commands for ${config.communityName}`);
-});
-
-client.on(Events.InteractionCreate, async (interaction) => {
+export async function execute(interaction) {
   if (!interaction.isChatInputCommand()) {
     return;
   }
@@ -51,6 +33,4 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await interaction.reply(response);
     }
   }
-});
-
-await client.login(config.discordToken);
+}

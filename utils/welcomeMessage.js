@@ -7,8 +7,10 @@ import {
   MessageFlags,
   SeparatorSpacingSize,
 } from 'discord.js';
+import { fileURLToPath } from 'node:url';
 
 export const welcomeHeaderImageName = 'IFS_Welcome_Header.png';
+export const welcomeHeaderImagePath = fileURLToPath(new URL(`../images/${welcomeHeaderImageName}`, import.meta.url));
 
 export function createWelcomeMessagePayload(imagePath) {
   const container = new ContainerBuilder()

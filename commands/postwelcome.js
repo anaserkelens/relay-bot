@@ -1,14 +1,13 @@
 import { access } from 'node:fs/promises';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 
-import { config } from '../lib/config.js';
-import { createWelcomeMessagePayload, welcomeHeaderImageName } from '../messages/welcome.js';
-
-const projectRoot = fileURLToPath(new URL('../../', import.meta.url));
-const welcomeHeaderImagePath = join(projectRoot, 'assets', welcomeHeaderImageName);
+import { config } from '../utils/config.js';
+import {
+  createWelcomeMessagePayload,
+  welcomeHeaderImageName,
+  welcomeHeaderImagePath,
+} from '../utils/welcomeMessage.js';
 
 async function fileExists(path) {
   try {
@@ -46,7 +45,7 @@ export async function execute(interaction) {
 
   if (!(await fileExists(welcomeHeaderImagePath))) {
     await interaction.editReply(
-      `Missing welcome header image. Add ${welcomeHeaderImageName} to the assets folder, then try again.`,
+      `Missing welcome header image. Add ${welcomeHeaderImageName} to the images folder, then try again.`,
     );
     return;
   }

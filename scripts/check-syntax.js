@@ -23,8 +23,12 @@ async function collectJavaScriptFiles(directory) {
 }
 
 const files = [
-  ...(await collectJavaScriptFiles('src')),
+  ...(await collectJavaScriptFiles('commands')),
+  ...(await collectJavaScriptFiles('events')),
   ...(await collectJavaScriptFiles('scripts')),
+  ...(await collectJavaScriptFiles('utils')),
+  'deploy-commands.js',
+  'index.js',
 ].sort();
 
 let failed = false;

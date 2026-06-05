@@ -3,11 +3,11 @@
   "version": "0.1.0",
   "description": "Discord bot for the Interface Society community.",
   "type": "module",
-  "main": "src/index.js",
+  "main": "index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "node src/index.js",
-    "deploy:commands": "node src/deploy-commands.js",
+    "start": "node index.js",
+    "dev": "node index.js",
+    "deploy:commands": "node deploy-commands.js",
     "check": "node scripts/check-syntax.js"
   },
   "engines": {
