@@ -27,6 +27,10 @@ function startDashboard(client) {
     });
   });
 
+  server.on('error', (error) => {
+    console.error('Dashboard server failed:', error);
+  });
+
   server.listen(config.dashboard.port, () => {
     console.log(`Dashboard listening on port ${config.dashboard.port}.`);
   });
@@ -37,11 +41,29 @@ function startDashboard(client) {
 async function handleRequest(client, request, response) {
   const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
 
+  if (shouldLogDashboardRequest(request.method, url.pathname)) {
+    console.log(`Dashboard request: ${request.method} ${url.pathname}`);
+  }
+
   if (request.method === 'GET' && url.pathname === '/health') {
     sendJson(response, 200, {
       botReady: client.isReady(),
       dashboardEnabled: true,
     });
+    return;
+  }
+
+  if (request.method === 'GET' && url.pathname === '/api/ping') {
+    sendJson(response, 200, {
+      ok: true,
+      botReady: client.isReady(),
+      tag: client.user?.tag || null,
+    });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/login') {
+    await handleClassicLogin(client, request, response);
     return;
   }
 
@@ -80,6 +102,7 @@ async function handleRequest(client, request, response) {
 }
 
 async function handleLogin(client, request, response) {
+  console.log('Dashboard login API request received.');
   const body = await readJsonBody(request, 64 * 1024);
 
   if (String(body.password || '') !== config.dashboard.password) {
@@ -94,6 +117,24 @@ async function handleLogin(client, request, response) {
     secure: isSecureRequest(request),
   });
   sendJson(response, 200, { ok: true, botReady: client.isReady(), tag: client.user?.tag || null });
+}
+
+async function handleClassicLogin(client, request, response) {
+  console.log('Dashboard basic login request received.');
+  const body = await readFormBody(request, 64 * 1024);
+
+  if (String(body.password || '') !== config.dashboard.password) {
+    console.warn('Dashboard basic login failed.');
+    redirect(response, '/?loginError=invalid');
+    return;
+  }
+
+  console.log('Dashboard basic login succeeded.');
+  setCookie(response, sessionCookieName, createSessionValue(), {
+    maxAge: 7 * 24 * 60 * 60,
+    secure: isSecureRequest(request),
+  });
+  redirect(response, '/');
 }
 
 async function handleSendMessage(client, request, response) {
@@ -166,6 +207,24 @@ function serveStatic(pathname, response) {
 }
 
 function readJsonBody(request, maxBytes) {
+  return readTextBody(request, maxBytes).then((body) => {
+    if (!body) {
+      return {};
+    }
+
+    try {
+      return JSON.parse(body);
+    } catch {
+      throw new Error('Request body must be valid JSON.');
+    }
+  });
+}
+
+function readFormBody(request, maxBytes) {
+  return readTextBody(request, maxBytes).then((body) => Object.fromEntries(new URLSearchParams(body)));
+}
+
+function readTextBody(request, maxBytes) {
   return new Promise((resolve, reject) => {
     let body = '';
     let bytes = 0;
@@ -185,16 +244,7 @@ function readJsonBody(request, maxBytes) {
     });
 
     request.on('end', () => {
-      if (!body) {
-        resolve({});
-        return;
-      }
-
-      try {
-        resolve(JSON.parse(body));
-      } catch {
-        reject(new Error('Request body must be valid JSON.'));
-      }
+      resolve(body);
     });
 
     request.on('error', reject);
@@ -207,6 +257,14 @@ function sendJson(response, statusCode, payload) {
     'Cache-Control': 'no-store',
   });
   response.end(JSON.stringify(payload));
+}
+
+function redirect(response, location) {
+  response.writeHead(303, {
+    Location: location,
+    'Cache-Control': 'no-store',
+  });
+  response.end();
 }
 
 function sendText(response, statusCode, text) {
@@ -261,6 +319,10 @@ function setCookie(response, name, value, options = {}) {
 
 function isSecureRequest(request) {
   return request.headers['x-forwarded-proto'] === 'https' || request.socket.encrypted;
+}
+
+function shouldLogDashboardRequest(method, pathname) {
+  return pathname === '/health' || pathname === '/login' || pathname.startsWith('/api/') || method !== 'GET';
 }
 
 module.exports = {

@@ -9,16 +9,19 @@
   <body>
     <main class="shell">
       <section id="login-view" class="login-panel" hidden>
-        <form id="login-form" class="login-form">
+        <form id="login-form" class="login-form" method="post" action="/login">
           <div>
             <p class="eyebrow">Interface Society</p>
             <h1>Relay Dashboard</h1>
           </div>
           <label>
             Dashboard password
-            <input id="password" type="password" autocomplete="current-password" required />
+            <input id="password" name="password" type="password" autocomplete="current-password" required />
           </label>
-          <button id="login-button" type="submit">Log in</button>
+          <div class="login-actions">
+            <button id="login-button" type="submit">Log in</button>
+            <button id="basic-login-button" class="secondary" type="button">Basic login</button>
+          </div>
           <p id="login-error" class="error" role="status"></p>
         </form>
       </section>

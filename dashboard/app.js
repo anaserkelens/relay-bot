@@ -3,6 +3,7 @@ const dashboardView = document.querySelector('#dashboard-view');
 const loginForm = document.querySelector('#login-form');
 const loginError = document.querySelector('#login-error');
 const loginButton = document.querySelector('#login-button');
+const basicLoginButton = document.querySelector('#basic-login-button');
 const passwordInput = document.querySelector('#password');
 const logoutButton = document.querySelector('#logout');
 const botStatus = document.querySelector('#bot-status');
@@ -49,6 +50,7 @@ async function init() {
 
 function bindEvents() {
   loginForm.addEventListener('submit', handleLogin);
+  basicLoginButton.addEventListener('click', handleBasicLogin);
   logoutButton.addEventListener('click', handleLogout);
   composer.addEventListener('submit', handleSend);
   imageInput.addEventListener('change', handleImageChange);
@@ -62,9 +64,13 @@ async function handleLogin(event) {
   event.preventDefault();
   loginError.textContent = '';
   loginButton.disabled = true;
-  loginButton.textContent = 'Logging in...';
+  basicLoginButton.disabled = true;
+  loginButton.textContent = 'Checking API...';
 
   try {
+    await api('/api/ping');
+    loginButton.textContent = 'Logging in...';
+
     await api('/api/login', {
       method: 'POST',
       body: { password: passwordInput.value },
@@ -81,8 +87,18 @@ async function handleLogin(event) {
     loginError.textContent = error.message;
   } finally {
     loginButton.disabled = false;
+    basicLoginButton.disabled = false;
     loginButton.textContent = 'Log in';
   }
+}
+
+function handleBasicLogin() {
+  if (!passwordInput.reportValidity()) {
+    return;
+  }
+
+  loginError.textContent = 'Submitting basic login...';
+  HTMLFormElement.prototype.submit.call(loginForm);
 }
 
 async function handleLogout() {
@@ -114,6 +130,12 @@ async function handleSend(event) {
 function showLogin() {
   dashboardView.hidden = true;
   loginView.hidden = false;
+
+  if (new URLSearchParams(window.location.search).get('loginError') === 'invalid') {
+    loginError.textContent = 'Invalid dashboard password.';
+    window.history.replaceState({}, '', '/');
+  }
+
   passwordInput.focus();
 }
 

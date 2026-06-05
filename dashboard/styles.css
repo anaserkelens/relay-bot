@@ -84,6 +84,12 @@ button.secondary {
   padding: 24px;
 }
 
+.login-actions {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
 .dashboard {
   display: grid;
   gap: 18px;
