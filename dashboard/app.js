@@ -23,6 +23,8 @@ const allowMentionsInput = document.querySelector('#allow-mentions');
 const sectionsContainer = document.querySelector('#sections');
 const buttonsContainer = document.querySelector('#buttons');
 const addSectionButton = document.querySelector('#add-section');
+const addDividerButton = document.querySelector('#add-divider');
+const addSpacerButton = document.querySelector('#add-spacer');
 const addButtonButton = document.querySelector('#add-button');
 const newMessageButton = document.querySelector('#new-message');
 const saveMessageButton = document.querySelector('#save-message');
@@ -56,7 +58,7 @@ const seededWelcomeMessage = {
   name: 'Welcome Message',
   channelId: '1350095949896093764',
   image: null,
-  sections: [welcomeStarter],
+  blocks: [{ type: 'text', content: welcomeStarter }],
   buttons: [
     {
       label: 'Guidelines',
@@ -99,6 +101,8 @@ function bindEvents() {
   savedMessagesContainer.addEventListener('click', handleSavedMessageClick);
   imageInput.addEventListener('change', handleImageChange);
   addSectionButton.addEventListener('click', () => addSection(''));
+  addDividerButton.addEventListener('click', () => addDivider('small'));
+  addSpacerButton.addEventListener('click', () => addSpacerBlock('small'));
   addButtonButton.addEventListener('click', () => addButton('', ''));
   newMessageButton.addEventListener('click', () => {
     resetComposer();
@@ -106,6 +110,7 @@ function bindEvents() {
   });
   saveMessageButton.addEventListener('click', handleSaveMessage);
   sectionsContainer.addEventListener('input', updatePreview);
+  sectionsContainer.addEventListener('change', updatePreview);
   buttonsContainer.addEventListener('input', updatePreview);
 }
 
@@ -264,7 +269,7 @@ function handleSaveMessage() {
     name: payload.name || createUntitledMessageName(),
     channelId: payload.channelId,
     image: payload.image,
-    sections: payload.sections,
+    blocks: payload.blocks,
     buttons: payload.buttons,
     allowMentions: payload.allowMentions,
     updatedAt: new Date().toISOString(),
@@ -307,7 +312,7 @@ function resetComposer() {
     name: '',
     channelId: '',
     image: null,
-    sections: [],
+    blocks: [],
     buttons: [],
     allowMentions: false,
   });
@@ -324,8 +329,20 @@ function applyMessage(message) {
   sectionsContainer.innerHTML = '';
   buttonsContainer.innerHTML = '';
 
-  for (const section of message.sections || []) {
-    addSection(section);
+  for (const block of message.blocks || []) {
+    if (block.type === 'text') {
+      addSection(block.content);
+      continue;
+    }
+
+    if (block.type === 'divider') {
+      addDivider(block.spacing);
+      continue;
+    }
+
+    if (block.type === 'spacer') {
+      addSpacerBlock(block.spacing);
+    }
   }
 
   for (const button of message.buttons || []) {
@@ -376,7 +393,7 @@ function sanitizeSavedMessage(message) {
     name: String(message.name || 'Untitled message'),
     channelId: String(message.channelId || ''),
     image: message.image && typeof message.image === 'object' ? message.image : null,
-    sections: Array.isArray(message.sections) ? message.sections.map((section) => String(section)) : [],
+    blocks: sanitizeBlocks(message),
     buttons: Array.isArray(message.buttons)
       ? message.buttons.map((button) => ({
           label: String(button?.label || ''),
@@ -386,6 +403,34 @@ function sanitizeSavedMessage(message) {
     allowMentions: Boolean(message.allowMentions),
     updatedAt: String(message.updatedAt || new Date().toISOString()),
   };
+}
+
+function sanitizeBlocks(message) {
+  const sourceBlocks = Array.isArray(message.blocks)
+    ? message.blocks
+    : (Array.isArray(message.sections) ? message.sections.map((section) => ({ type: 'text', content: section })) : []);
+
+  return sourceBlocks
+    .map((block) => {
+      const type = String(block?.type || '').toLowerCase();
+
+      if (type === 'text') {
+        return {
+          type,
+          content: String(block.content || ''),
+        };
+      }
+
+      if (type === 'divider' || type === 'spacer') {
+        return {
+          type,
+          spacing: normalizeBlockSpacing(block.spacing),
+        };
+      }
+
+      return null;
+    })
+    .filter(Boolean);
 }
 
 function renderSavedMessages() {
@@ -409,10 +454,12 @@ function renderSavedMessages() {
 }
 
 function createSavedMessageMeta(message) {
-  const sectionCount = message.sections.filter((section) => section.trim()).length;
+  const textCount = message.blocks.filter((block) => block.type === 'text' && block.content.trim()).length;
+  const dividerCount = message.blocks.filter((block) => block.type === 'divider').length;
+  const spacerCount = message.blocks.filter((block) => block.type === 'spacer').length;
   const buttonCount = message.buttons.filter((button) => button.label.trim() && button.url.trim()).length;
 
-  return `${sectionCount} text ${sectionCount === 1 ? 'section' : 'sections'} - ${buttonCount} ${buttonCount === 1 ? 'button' : 'buttons'}`;
+  return `${textCount} text, ${dividerCount + spacerCount} layout, ${buttonCount} ${buttonCount === 1 ? 'button' : 'buttons'}`;
 }
 
 function createUntitledMessageName() {
@@ -428,9 +475,10 @@ function createId() {
 }
 
 function addSection(value) {
-  const index = sectionsContainer.children.length + 1;
+  const index = sectionsContainer.querySelectorAll('.text-block').length + 1;
   const block = document.createElement('section');
-  block.className = 'text-block';
+  block.className = 'text-block content-block';
+  block.dataset.blockType = 'text';
   block.innerHTML = `
     <div class="block-header">
       <h2>Text ${index}</h2>
@@ -440,6 +488,44 @@ function addSection(value) {
   `;
 
   block.querySelector('textarea').value = value;
+  block.querySelector('.remove').addEventListener('click', () => {
+    block.remove();
+    updatePreview();
+  });
+
+  sectionsContainer.append(block);
+  updatePreview();
+}
+
+function addDivider(spacing) {
+  addLayoutBlock('divider', spacing);
+}
+
+function addSpacerBlock(spacing) {
+  addLayoutBlock('spacer', spacing);
+}
+
+function addLayoutBlock(type, spacing) {
+  const block = document.createElement('section');
+  const isDivider = type === 'divider';
+
+  block.className = 'layout-block content-block';
+  block.dataset.blockType = type;
+  block.innerHTML = `
+    <div class="block-header">
+      <h2>${isDivider ? 'Divider' : 'Spacer'}</h2>
+      <button class="secondary remove" type="button">Remove</button>
+    </div>
+    <label class="field">
+      Spacing
+      <select class="block-spacing">
+        <option value="small">Small</option>
+        <option value="large">Large</option>
+      </select>
+    </label>
+  `;
+
+  block.querySelector('.block-spacing').value = normalizeBlockSpacing(spacing);
   block.querySelector('.remove').addEventListener('click', () => {
     block.remove();
     updatePreview();
@@ -507,7 +593,7 @@ function collectPayload() {
     name: messageNameInput.value.trim(),
     channelId: channelInput.value.trim(),
     image: state.image,
-    sections: [...document.querySelectorAll('.section-input')].map((input) => input.value),
+    blocks: collectBlocks(),
     buttons: [...document.querySelectorAll('.button-block')].map((block) => ({
       label: block.querySelector('.button-label').value,
       url: block.querySelector('.button-url').value,
@@ -516,9 +602,39 @@ function collectPayload() {
   };
 }
 
+function collectBlocks() {
+  return [...document.querySelectorAll('.content-block')]
+    .map((block) => {
+      const type = block.dataset.blockType;
+
+      if (type === 'text') {
+        return {
+          type,
+          content: block.querySelector('.section-input').value,
+        };
+      }
+
+      if (type === 'divider' || type === 'spacer') {
+        return {
+          type,
+          spacing: normalizeBlockSpacing(block.querySelector('.block-spacing')?.value),
+        };
+      }
+
+      return null;
+    })
+    .filter(Boolean);
+}
+
 function updatePreview() {
   const payload = collectPayload();
-  const sections = payload.sections.map((section) => section.trim()).filter(Boolean);
+  const blocks = payload.blocks.filter((block) => {
+    if (block.type !== 'text') {
+      return true;
+    }
+
+    return block.content.trim();
+  });
   const buttons = payload.buttons.filter((button) => button.label.trim() && button.url.trim());
 
   previewImage.hidden = !state.image;
@@ -529,11 +645,19 @@ function updatePreview() {
 
   previewSections.innerHTML = '';
 
-  for (const section of sections) {
-    const pre = document.createElement('pre');
-    pre.className = 'preview-section';
-    pre.textContent = section;
-    previewSections.append(pre);
+  for (const block of blocks) {
+    if (block.type === 'text') {
+      const pre = document.createElement('pre');
+      pre.className = 'preview-section';
+      pre.textContent = block.content.trim();
+      previewSections.append(pre);
+      continue;
+    }
+
+    const divider = document.createElement('div');
+    divider.className = `preview-layout preview-layout-${block.type} preview-layout-${block.spacing}`;
+    divider.setAttribute('aria-hidden', 'true');
+    previewSections.append(divider);
   }
 
   previewButtons.innerHTML = '';
@@ -548,7 +672,7 @@ function updatePreview() {
     previewButtons.append(anchor);
   }
 
-  sectionCount.textContent = `${sections.length} section${sections.length === 1 ? '' : 's'}`;
+  sectionCount.textContent = `${blocks.length} block${blocks.length === 1 ? '' : 's'}`;
 }
 
 function setSendStatus(message, type) {
@@ -647,4 +771,8 @@ function clearSessionToken() {
   } catch {
     // Ignore storage failures; logout still clears the server cookie.
   }
+}
+
+function normalizeBlockSpacing(spacing) {
+  return String(spacing || '').toLowerCase() === 'large' ? 'large' : 'small';
 }

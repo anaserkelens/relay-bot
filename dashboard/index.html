@@ -114,8 +114,12 @@
               </div>
 
               <div class="toolbar-row">
-                <h2>Text Sections</h2>
-                <button id="add-section" class="secondary" type="button">Add Text</button>
+                <h2>Content Blocks</h2>
+                <div class="toolbar-actions">
+                  <button id="add-section" class="secondary" type="button">Add Text</button>
+                  <button id="add-divider" class="secondary" type="button">Add Divider</button>
+                  <button id="add-spacer" class="secondary" type="button">Add Spacer</button>
+                </div>
               </div>
               <div id="sections" class="stack"></div>
 
@@ -137,7 +141,7 @@
             <aside class="preview-panel">
               <div class="toolbar-row">
                 <h2>Preview</h2>
-                <span id="section-count" class="muted">0 sections</span>
+                <span id="section-count" class="muted">0 blocks</span>
               </div>
               <div class="discord-preview">
                 <img id="preview-image" alt="" hidden />

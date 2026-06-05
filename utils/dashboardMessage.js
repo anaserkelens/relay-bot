@@ -10,9 +10,13 @@ const imageMimeExtensions = {
 function createDashboardMessagePayload(input, config) {
   const files = [];
   const component = new ContainerBuilder();
-  const sections = normalizeSections(input.sections);
+  const blocks = normalizeBlocks(input.blocks, input.sections);
   const buttons = normalizeButtons(input.buttons);
   const image = normalizeImage(input.image, config);
+
+  if (!image && blocks.length === 0 && buttons.length === 0) {
+    throw new Error('Add at least one text block, divider, spacer, image, or button.');
+  }
 
   if (image) {
     files.push({
@@ -23,19 +27,28 @@ function createDashboardMessagePayload(input, config) {
     component.addMediaGalleryComponents((gallery) =>
       gallery.addItems((mediaGalleryItem) => mediaGalleryItem.setURL(`attachment://${image.fileName}`)),
     );
-    addSpacer(component);
-  }
 
-  for (const [index, section] of sections.entries()) {
-    if (index > 0) {
+    if (blocks.length > 0 || buttons.length > 0) {
       addSpacer(component);
     }
+  }
 
-    component.addTextDisplayComponents((textDisplay) => textDisplay.setContent(section));
+  for (const block of blocks) {
+    if (block.type === 'text') {
+      component.addTextDisplayComponents((textDisplay) => textDisplay.setContent(block.content));
+      continue;
+    }
+
+    component.addSeparatorComponents((separator) =>
+      separator.setDivider(block.type === 'divider').setSpacing(block.spacing),
+    );
   }
 
   if (buttons.length > 0) {
-    addSpacer(component);
+    if (blocks.length > 0 || image) {
+      addSpacer(component);
+    }
+
     component.addActionRowComponents((actionRow) =>
       actionRow.addComponents(
         ...buttons.map((button) => (builder) => builder.setLabel(button.label).setURL(button.url)),
@@ -56,18 +69,54 @@ function addSpacer(component) {
   component.addSeparatorComponents((separator) => separator.setDivider(false).setSpacing(SeparatorSpacingSize.Small));
 }
 
-function normalizeSections(sections) {
+function normalizeBlocks(blocks, sections) {
+  if (!Array.isArray(blocks) || blocks.length === 0) {
+    return normalizeLegacySections(sections);
+  }
+
+  const normalized = [];
+
+  for (const block of blocks) {
+    const type = String(block?.type || '').trim().toLowerCase();
+
+    if (type === 'text') {
+      const content = String(block?.content || '').trim();
+
+      if (!content) {
+        continue;
+      }
+
+      if (content.length > 4000) {
+        throw new Error('Each text block must be 4000 characters or fewer.');
+      }
+
+      normalized.push({ type: 'text', content });
+      continue;
+    }
+
+    if (type === 'divider' || type === 'spacer') {
+      normalized.push({
+        type,
+        spacing: normalizeSpacing(block?.spacing),
+      });
+    }
+  }
+
+  if (normalized.length > 24) {
+    throw new Error('Use 24 content blocks or fewer.');
+  }
+
+  return normalized;
+}
+
+function normalizeLegacySections(sections) {
   if (!Array.isArray(sections)) {
-    throw new Error('Sections must be an array.');
+    return [];
   }
 
   const normalized = sections
     .map((section) => String(section || '').trim())
     .filter(Boolean);
-
-  if (normalized.length === 0) {
-    throw new Error('Add at least one text section.');
-  }
 
   if (normalized.length > 8) {
     throw new Error('Use 8 text sections or fewer.');
@@ -79,7 +128,22 @@ function normalizeSections(sections) {
     }
   }
 
-  return normalized;
+  return normalized.flatMap((section, index) => {
+    if (index === 0) {
+      return [{ type: 'text', content: section }];
+    }
+
+    return [
+      { type: 'spacer', spacing: SeparatorSpacingSize.Small },
+      { type: 'text', content: section },
+    ];
+  });
+}
+
+function normalizeSpacing(spacing) {
+  return String(spacing || '').toLowerCase() === 'large'
+    ? SeparatorSpacingSize.Large
+    : SeparatorSpacingSize.Small;
 }
 
 function normalizeButtons(buttons) {

@@ -58,6 +58,7 @@ body::before {
 
 button,
 input,
+select,
 textarea {
   font: inherit;
 }
@@ -172,6 +173,7 @@ button.secondary:hover {
 .metric-panel,
 .discord-preview,
 .text-block,
+.layout-block,
 .button-block {
   border: 1px solid var(--line-bright);
   border-radius: var(--radius);
@@ -221,11 +223,17 @@ h2 {
 
 .status-cluster,
 .toolbar-row,
+.toolbar-actions,
 .action-row {
   align-items: center;
   display: flex;
   gap: 10px;
   justify-content: space-between;
+}
+
+.toolbar-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .dashboard-tabs {
@@ -436,6 +444,7 @@ h2 {
 }
 
 input,
+select,
 textarea {
   width: 100%;
   border: 1px solid rgba(20, 30, 48, 0.1);
@@ -453,6 +462,11 @@ textarea {
 input {
   min-height: 42px;
   padding: 0 13px;
+}
+
+select {
+  min-height: 42px;
+  padding: 0 34px 0 13px;
 }
 
 input[type="file"] {
@@ -473,6 +487,7 @@ textarea {
 }
 
 input:focus,
+select:focus,
 textarea:focus {
   border-color: rgba(0, 122, 255, 0.54);
   background: rgba(255, 255, 255, 0.82);
@@ -487,6 +502,7 @@ textarea:focus {
 }
 
 .text-block,
+.layout-block,
 .button-block {
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.26)),
@@ -566,6 +582,27 @@ textarea:focus {
   word-break: break-word;
 }
 
+.preview-layout {
+  border-radius: 999px;
+  margin-left: 10px;
+}
+
+.preview-layout-divider {
+  border-top: 1px solid rgba(242, 243, 245, 0.34);
+}
+
+.preview-layout-spacer {
+  border-top: 0;
+}
+
+.preview-layout-small {
+  height: 12px;
+}
+
+.preview-layout-large {
+  height: 24px;
+}
+
 .preview-buttons {
   display: flex;
   flex-wrap: wrap;
@@ -596,6 +633,7 @@ textarea:focus {
   }
 
   .topbar,
+  .toolbar-row,
   .action-row {
     align-items: stretch;
     flex-direction: column;
