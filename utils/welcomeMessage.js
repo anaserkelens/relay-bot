@@ -28,8 +28,8 @@ function createWelcomeMessagePayload(imagePath) {
 > Reach out to anyone with the <@&1350102611457736775> role if you need help. Someone from the team will get back to you as soon as possible.
 
 # EXTRA INFORMATION
-> <a:DotLoader1:1512457794790625280> **Created:** <t:1741958340:D>
-> <a:DotLoader1:1512457794790625280> **Invite:** https://discord.gg/CVWJFXWMS6
+> <a:ifs_calendar:1512493763791032502> **Created:** <t:1741958340:D>
+> <a:ifs_link:1512494294068629575> **Invite:** https://discord.gg/CVWJFXWMS6
 `),
     )
     .addSeparatorComponents((separator) =>
