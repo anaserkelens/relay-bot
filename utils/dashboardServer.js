@@ -46,12 +46,12 @@ async function handleRequest(client, request, response) {
   }
 
   if (request.method === 'POST' && url.pathname === '/api/login') {
-    await handleLogin(request, response);
+    await handleLogin(client, request, response);
     return;
   }
 
   if (request.method === 'POST' && url.pathname === '/api/logout') {
-    setCookie(response, sessionCookieName, '', { maxAge: 0 });
+    setCookie(response, sessionCookieName, '', { maxAge: 0, secure: isSecureRequest(request) });
     sendJson(response, 200, { ok: true });
     return;
   }
@@ -79,16 +79,21 @@ async function handleRequest(client, request, response) {
   serveStatic(url.pathname, response);
 }
 
-async function handleLogin(request, response) {
+async function handleLogin(client, request, response) {
   const body = await readJsonBody(request, 64 * 1024);
 
   if (String(body.password || '') !== config.dashboard.password) {
+    console.warn('Dashboard login failed.');
     sendJson(response, 401, { error: 'Invalid password.' });
     return;
   }
 
-  setCookie(response, sessionCookieName, createSessionValue(), { maxAge: 7 * 24 * 60 * 60 });
-  sendJson(response, 200, { ok: true });
+  console.log('Dashboard login succeeded.');
+  setCookie(response, sessionCookieName, createSessionValue(), {
+    maxAge: 7 * 24 * 60 * 60,
+    secure: isSecureRequest(request),
+  });
+  sendJson(response, 200, { ok: true, botReady: client.isReady(), tag: client.user?.tag || null });
 }
 
 async function handleSendMessage(client, request, response) {
@@ -247,7 +252,15 @@ function setCookie(response, name, value, options = {}) {
     attributes.push(`Max-Age=${options.maxAge}`);
   }
 
+  if (options.secure) {
+    attributes.push('Secure');
+  }
+
   response.setHeader('Set-Cookie', attributes.join('; '));
+}
+
+function isSecureRequest(request) {
+  return request.headers['x-forwarded-proto'] === 'https' || request.socket.encrypted;
 }
 
 module.exports = {

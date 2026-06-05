@@ -2,6 +2,7 @@ const loginView = document.querySelector('#login-view');
 const dashboardView = document.querySelector('#dashboard-view');
 const loginForm = document.querySelector('#login-form');
 const loginError = document.querySelector('#login-error');
+const loginButton = document.querySelector('#login-button');
 const passwordInput = document.querySelector('#password');
 const logoutButton = document.querySelector('#logout');
 const botStatus = document.querySelector('#bot-status');
@@ -60,15 +61,27 @@ function bindEvents() {
 async function handleLogin(event) {
   event.preventDefault();
   loginError.textContent = '';
+  loginButton.disabled = true;
+  loginButton.textContent = 'Logging in...';
 
   try {
-    const result = await api('/api/login', {
+    await api('/api/login', {
       method: 'POST',
       body: { password: passwordInput.value },
     });
-    showDashboard(result);
+
+    const session = await api('/api/session').catch(() => null);
+
+    if (!session?.ok) {
+      throw new Error('Password accepted, but the browser did not keep the dashboard session. Refresh and try again.');
+    }
+
+    showDashboard(session);
   } catch (error) {
     loginError.textContent = error.message;
+  } finally {
+    loginButton.disabled = false;
+    loginButton.textContent = 'Log in';
   }
 }
 
@@ -261,13 +274,40 @@ function readFileAsDataUrl(file) {
 }
 
 async function api(path, options = {}) {
-  const response = await fetch(path, {
-    method: options.method || 'GET',
-    headers: options.body ? { 'Content-Type': 'application/json' } : undefined,
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
 
-  const data = await response.json().catch(() => ({}));
+  let response;
+
+  try {
+    response = await fetch(path, {
+      method: options.method || 'GET',
+      headers: options.body ? { 'Content-Type': 'application/json' } : undefined,
+      body: options.body ? JSON.stringify(options.body) : undefined,
+      cache: 'no-store',
+      credentials: 'same-origin',
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error('The dashboard API did not respond. Check the Railway deployment logs.');
+    }
+
+    throw new Error('Could not reach the dashboard API. Refresh the page and check Railway logs.');
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  const text = await response.text();
+  let data = {};
+
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { error: text.slice(0, 200) };
+    }
+  }
 
   if (!response.ok) {
     throw new Error(data.error || 'Request failed.');
