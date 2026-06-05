@@ -95,6 +95,12 @@ const config = {
   },
 };
 
+config.intents = {
+  members: readBoolean('ENABLE_SERVER_MEMBERS_INTENT', false),
+  messageContent: readBoolean('ENABLE_MESSAGE_CONTENT_INTENT', config.invites.enabled),
+  presences: readBoolean('ENABLE_PRESENCE_INTENT', config.streamMonitor.enabled),
+};
+
 module.exports = {
   config,
   readBoolean,

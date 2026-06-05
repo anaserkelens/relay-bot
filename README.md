@@ -51,11 +51,13 @@ You can also register commands manually:
 - `DISCORD_CLIENT_ID`: General Information -> Application ID.
 - `DISCORD_GUILD_ID`: Right-click your Discord server -> Copy Server ID. Developer Mode must be enabled in Discord settings.
 
-Enable these privileged gateway intents in the Bot page if you want the imported reference systems to work:
+Enable these privileged gateway intents in the Bot page only if you also enable their matching Railway variables:
 
-- Presence Intent
-- Server Members Intent
-- Message Content Intent
+- Presence Intent -> `ENABLE_PRESENCE_INTENT=true`
+- Server Members Intent -> `ENABLE_SERVER_MEMBERS_INTENT=true`
+- Message Content Intent -> `ENABLE_MESSAGE_CONTENT_INTENT=true`
+
+Leave those Railway variables `false` while getting the bot online for the first time. Core slash commands and `/postwelcome` do not need privileged intents.
 
 Invite the bot with both `bot` and `applications.commands` scopes. The imported systems need message, moderation, member, invite, reaction, and thread permissions.
 
@@ -76,6 +78,9 @@ https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=412317
    WELCOME_CHANNEL_ID
    AUTO_REGISTER_COMMANDS
    PRESENCE_TEXT
+   ENABLE_SERVER_MEMBERS_INTENT
+   ENABLE_MESSAGE_CONTENT_INTENT
+   ENABLE_PRESENCE_INTENT
    COMMUNITY_NAME
    COMMUNITY_DESCRIPTION
    ```

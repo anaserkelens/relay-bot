@@ -4,18 +4,33 @@ const { config } = require('./utils/config');
 const { loadCommands } = require('./utils/loadCommands');
 const { loadEvents } = require('./utils/loadEvents');
 
-const client = new Client({
-  intents: [
+function buildIntents() {
+  const intents = [
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildMessageReactions,
     GatewayIntentBits.GuildModeration,
     GatewayIntentBits.GuildInvites,
-    GatewayIntentBits.GuildPresences,
     GatewayIntentBits.GuildScheduledEvents,
-  ],
+  ];
+
+  if (config.intents.members) {
+    intents.push(GatewayIntentBits.GuildMembers);
+  }
+
+  if (config.intents.messageContent) {
+    intents.push(GatewayIntentBits.MessageContent);
+  }
+
+  if (config.intents.presences) {
+    intents.push(GatewayIntentBits.GuildPresences);
+  }
+
+  return intents;
+}
+
+const client = new Client({
+  intents: buildIntents(),
   partials: [Partials.Message, Partials.Channel, Partials.Reaction, Partials.User, Partials.GuildMember],
 });
 
