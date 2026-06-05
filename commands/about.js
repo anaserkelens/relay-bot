@@ -1,12 +1,12 @@
-import { EmbedBuilder, SlashCommandBuilder } from 'discord.js';
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 
-import { config } from '../utils/config.js';
+const { config } = require('../utils/config');
 
-export const data = new SlashCommandBuilder()
+const data = new SlashCommandBuilder()
   .setName('about')
   .setDescription(`Learn about ${config.communityName}.`);
 
-export async function execute(interaction) {
+async function execute(interaction) {
   const embed = new EmbedBuilder()
     .setColor(0x2dd4bf)
     .setTitle(config.communityName)
@@ -16,3 +16,5 @@ export async function execute(interaction) {
 
   await interaction.reply({ embeds: [embed] });
 }
+
+module.exports = { data, execute };

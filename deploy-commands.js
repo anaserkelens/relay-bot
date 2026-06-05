@@ -1,9 +1,9 @@
-import { config } from './utils/config.js';
-import { loadCommands } from './utils/loadCommands.js';
-import { registerCommandsWithRest } from './utils/syncCommands.js';
+const { config } = require('./utils/config');
+const { loadCommands } = require('./utils/loadCommands');
+const { registerCommandsWithRest } = require('./utils/syncCommands');
 
 async function main() {
-  const commands = await loadCommands();
+  const commands = loadCommands();
   const result = await registerCommandsWithRest(commands);
 
   console.log(
@@ -15,9 +15,7 @@ async function main() {
   }
 }
 
-try {
-  await main();
-} catch (error) {
+main().catch((error) => {
   console.error('Failed to register slash commands:', error);
   process.exit(1);
-}
+});

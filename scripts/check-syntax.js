@@ -1,16 +1,16 @@
-import { readdir } from 'node:fs/promises';
-import { spawnSync } from 'node:child_process';
-import { join } from 'node:path';
+const { readdirSync } = require('node:fs');
+const { spawnSync } = require('node:child_process');
+const { join } = require('node:path');
 
-async function collectJavaScriptFiles(directory) {
-  const entries = await readdir(directory, { withFileTypes: true });
+function collectJavaScriptFiles(directory) {
+  const entries = readdirSync(directory, { withFileTypes: true });
   const files = [];
 
   for (const entry of entries) {
     const path = join(directory, entry.name);
 
     if (entry.isDirectory()) {
-      files.push(...(await collectJavaScriptFiles(path)));
+      files.push(...collectJavaScriptFiles(path));
       continue;
     }
 
@@ -23,10 +23,11 @@ async function collectJavaScriptFiles(directory) {
 }
 
 const files = [
-  ...(await collectJavaScriptFiles('commands')),
-  ...(await collectJavaScriptFiles('events')),
-  ...(await collectJavaScriptFiles('scripts')),
-  ...(await collectJavaScriptFiles('utils')),
+  ...collectJavaScriptFiles('commands'),
+  ...collectJavaScriptFiles('events'),
+  ...collectJavaScriptFiles('scripts'),
+  ...collectJavaScriptFiles('utils'),
+  'bot.js',
   'deploy-commands.js',
   'index.js',
 ].sort();

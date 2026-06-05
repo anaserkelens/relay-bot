@@ -1,10 +1,10 @@
-import { EmbedBuilder, MessageFlags, SlashCommandBuilder } from 'discord.js';
+const { EmbedBuilder, MessageFlags, SlashCommandBuilder } = require('discord.js');
 
-export const data = new SlashCommandBuilder()
+const data = new SlashCommandBuilder()
   .setName('server')
   .setDescription('Show basic information about this server.');
 
-export async function execute(interaction) {
+async function execute(interaction) {
   const { guild } = interaction;
 
   if (!guild) {
@@ -33,3 +33,5 @@ export async function execute(interaction) {
 
   await interaction.reply({ embeds: [embed] });
 }
+
+module.exports = { data, execute };

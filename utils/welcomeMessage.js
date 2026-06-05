@@ -1,18 +1,12 @@
-import {
-  ActionRowBuilder,
-  AttachmentBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  ContainerBuilder,
-  MessageFlags,
-  SeparatorSpacingSize,
-} from 'discord.js';
-import { fileURLToPath } from 'node:url';
+const path = require('node:path');
 
-export const welcomeHeaderImageName = 'IFS_Welcome_Header.png';
-export const welcomeHeaderImagePath = fileURLToPath(new URL(`../images/${welcomeHeaderImageName}`, import.meta.url));
+const { ContainerBuilder, SeparatorSpacingSize } = require('./components');
+const { config } = require('./config');
 
-export function createWelcomeMessagePayload(imagePath) {
+const welcomeHeaderImageName = 'IFS_Welcome_Header.png';
+const welcomeHeaderImagePath = path.join(__dirname, '..', 'images', welcomeHeaderImageName);
+
+function createWelcomeMessagePayload(imagePath) {
   const container = new ContainerBuilder()
     .addMediaGalleryComponents((gallery) =>
       gallery.addItems((mediaGalleryItem) =>
@@ -45,22 +39,24 @@ export function createWelcomeMessagePayload(imagePath) {
       separator.setDivider(false).setSpacing(SeparatorSpacingSize.Small),
     )
     .addTextDisplayComponents((textDisplay) => textDisplay.setContent('# GET STARTED'))
-    .addActionRowComponents(
-      new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setStyle(ButtonStyle.Link)
-          .setLabel('Guidelines')
-          .setURL('https://discord.com/channels/1350095949896093761/1350104592058159115'),
-        new ButtonBuilder()
-          .setStyle(ButtonStyle.Link)
-          .setLabel('Introduce yourself')
-          .setURL('https://discord.com/channels/1350095949896093761/1511820790759166167'),
+    .addActionRowComponents((actionRow) =>
+      actionRow.addComponents(
+        (button) =>
+          button
+            .setLabel('Guidelines')
+            .setURL(`https://discord.com/channels/${config.guildId}/${config.channels.guidelines}`),
+        (button) =>
+          button
+            .setLabel('Introduce yourself')
+            .setURL(`https://discord.com/channels/${config.guildId}/${config.channels.introductions}`),
       ),
     );
 
-  return {
-    components: [container],
-    files: [new AttachmentBuilder(imagePath, { name: welcomeHeaderImageName })],
-    flags: MessageFlags.IsComponentsV2,
-  };
+  return container.toDiscordPayload([{ attachment: imagePath, name: welcomeHeaderImageName }]);
 }
+
+module.exports = {
+  createWelcomeMessagePayload,
+  welcomeHeaderImageName,
+  welcomeHeaderImagePath,
+};

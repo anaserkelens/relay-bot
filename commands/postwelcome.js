@@ -1,30 +1,21 @@
-import { access } from 'node:fs/promises';
+const fs = require('node:fs');
 
-import { MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
+const { MessageFlags, PermissionFlagsBits, SlashCommandBuilder } = require('discord.js');
 
-import { config } from '../utils/config.js';
-import {
+const { config } = require('../utils/config');
+const {
   createWelcomeMessagePayload,
   welcomeHeaderImageName,
   welcomeHeaderImagePath,
-} from '../utils/welcomeMessage.js';
+} = require('../utils/welcomeMessage');
 
-async function fileExists(path) {
-  try {
-    await access(path);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export const data = new SlashCommandBuilder()
+const data = new SlashCommandBuilder()
   .setName('postwelcome')
   .setDescription('Post the Interface Society welcome message in the entrance channel.')
   .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .setDMPermission(false);
 
-export async function execute(interaction) {
+async function execute(interaction) {
   if (!interaction.inGuild()) {
     await interaction.reply({
       content: 'This command can only be used inside the Interface Society server.',
@@ -43,20 +34,22 @@ export async function execute(interaction) {
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-  if (!(await fileExists(welcomeHeaderImagePath))) {
+  if (!fs.existsSync(welcomeHeaderImagePath)) {
     await interaction.editReply(
       `Missing welcome header image. Add ${welcomeHeaderImageName} to the images folder, then try again.`,
     );
     return;
   }
 
-  const channel = await interaction.client.channels.fetch(config.welcomeChannelId);
+  const channel = await interaction.client.channels.fetch(config.channels.welcome);
 
   if (!channel?.isSendable()) {
-    await interaction.editReply(`Entrance channel ${config.welcomeChannelId} was not found or is not sendable.`);
+    await interaction.editReply(`Entrance channel ${config.channels.welcome} was not found or is not sendable.`);
     return;
   }
 
   await channel.send(createWelcomeMessagePayload(welcomeHeaderImagePath));
-  await interaction.editReply(`Welcome message posted in <#${config.welcomeChannelId}>.`);
+  await interaction.editReply(`Welcome message posted in <#${config.channels.welcome}>.`);
 }
+
+module.exports = { data, execute };

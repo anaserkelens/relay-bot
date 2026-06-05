@@ -1,12 +1,12 @@
-import { REST, Routes } from 'discord.js';
+const { REST, Routes } = require('discord.js');
 
-import { config } from './config.js';
+const { config } = require('./config');
 
-export function createCommandPayload(commands) {
-  return [...commands].map((command) => command.data.toJSON());
+function createCommandPayload(commands) {
+  return [...commands].map((command) => (typeof command.data.toJSON === 'function' ? command.data.toJSON() : command.data));
 }
 
-export async function syncCommandsForClient(client) {
+async function syncCommandsForClient(client) {
   const body = createCommandPayload(client.commands.values());
 
   if (config.guildId) {
@@ -18,7 +18,7 @@ export async function syncCommandsForClient(client) {
   return { count: body.length, guildId: undefined, scope: 'global' };
 }
 
-export async function registerCommandsWithRest(commands) {
+async function registerCommandsWithRest(commands) {
   const body = createCommandPayload(commands);
   const rest = new REST({ version: '10' }).setToken(config.discordToken);
 
@@ -30,3 +30,9 @@ export async function registerCommandsWithRest(commands) {
   await rest.put(Routes.applicationCommands(config.clientId), { body });
   return { count: body.length, guildId: undefined, scope: 'global' };
 }
+
+module.exports = {
+  createCommandPayload,
+  registerCommandsWithRest,
+  syncCommandsForClient,
+};

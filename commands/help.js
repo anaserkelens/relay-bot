@@ -1,12 +1,12 @@
-import { EmbedBuilder, SlashCommandBuilder } from 'discord.js';
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 
-import { config } from '../utils/config.js';
+const { config } = require('../utils/config');
 
-export const data = new SlashCommandBuilder()
+const data = new SlashCommandBuilder()
   .setName('help')
   .setDescription('Show available bot commands.');
 
-export async function execute(interaction) {
+async function execute(interaction) {
   const commandList = [...interaction.client.commands.values()]
     .map((command) => `/${command.data.name} - ${command.data.description}`)
     .sort()
@@ -19,3 +19,5 @@ export async function execute(interaction) {
 
   await interaction.reply({ embeds: [embed] });
 }
+
+module.exports = { data, execute };

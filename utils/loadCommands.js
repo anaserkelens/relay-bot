@@ -1,15 +1,16 @@
-import { readdir } from 'node:fs/promises';
+const { readdirSync } = require('node:fs');
+const path = require('node:path');
 
-const commandsDirectory = new URL('../commands/', import.meta.url);
+const commandsDirectory = path.join(__dirname, '..', 'commands');
 
-export async function loadCommands() {
-  const files = await readdir(commandsDirectory);
+function loadCommands() {
+  const files = readdirSync(commandsDirectory);
   const commandFiles = files.filter((file) => file.endsWith('.js')).sort();
   const commands = [];
 
   for (const file of commandFiles) {
-    const commandUrl = new URL(file, commandsDirectory);
-    const command = await import(commandUrl.href);
+    const filePath = path.join(commandsDirectory, file);
+    const command = require(filePath);
 
     if (!command.data || typeof command.execute !== 'function') {
       throw new Error(`Command ${file} must export data and execute.`);
@@ -20,3 +21,5 @@ export async function loadCommands() {
 
   return commands;
 }
+
+module.exports = { loadCommands };

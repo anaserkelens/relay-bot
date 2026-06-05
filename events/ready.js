@@ -1,13 +1,18 @@
-import { Events } from 'discord.js';
+const { ActivityType, Events } = require('discord.js');
 
-import { config } from '../utils/config.js';
-import { syncCommandsForClient } from '../utils/syncCommands.js';
+const { config } = require('../utils/config');
+const { syncCommandsForClient } = require('../utils/syncCommands');
 
-export const name = Events.ClientReady;
-export const once = true;
+const name = Events.ClientReady;
+const once = true;
 
-export async function execute(client) {
+async function execute(client) {
   console.log(`Logged in as ${client.user.tag}`);
+
+  client.user.setPresence({
+    activities: [{ name: config.presenceText, type: ActivityType.Watching }],
+    status: 'online',
+  });
 
   if (!config.autoRegisterCommands) {
     console.log('Automatic slash command registration is disabled.');
@@ -23,3 +28,5 @@ export async function execute(client) {
     console.error('Failed to sync slash commands on startup:', error);
   }
 }
+
+module.exports = { name, once, execute };
