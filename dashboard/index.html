@@ -47,17 +47,6 @@
           <button class="tab-button" type="button" data-tab="settings" aria-selected="false">Settings</button>
         </nav>
 
-        <section class="saved-messages-panel" aria-label="Saved messages">
-          <div class="saved-messages-header">
-            <div>
-              <h2>Saved Messages</h2>
-              <span id="saved-message-count" class="muted">0 saved</span>
-            </div>
-            <button id="new-message" class="secondary" type="button">New Blank</button>
-          </div>
-          <div id="saved-messages" class="saved-messages-list"></div>
-        </section>
-
         <section class="tab-panel" data-panel="overview">
           <div class="metric-grid">
             <section class="metric-panel">
@@ -83,6 +72,17 @@
         </section>
 
         <section class="tab-panel" data-panel="messages" hidden>
+          <section class="saved-messages-panel" aria-label="Saved messages">
+            <div class="saved-messages-header">
+              <div>
+                <h2>Saved Messages</h2>
+                <span id="saved-message-count" class="muted">0 saved</span>
+              </div>
+              <button id="new-message" class="secondary" type="button">New Blank</button>
+            </div>
+            <div id="saved-messages" class="saved-messages-list"></div>
+          </section>
+
           <section class="workspace">
             <form id="composer" class="composer">
               <div class="form-grid">
