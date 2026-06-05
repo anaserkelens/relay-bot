@@ -8,6 +8,11 @@ const apiStatus = document.querySelector('#api-status');
 const passwordInput = document.querySelector('#password');
 const logoutButton = document.querySelector('#logout');
 const botStatus = document.querySelector('#bot-status');
+const overviewBotStatus = document.querySelector('#overview-bot-status');
+const dashboardApiStatus = document.querySelector('#dashboard-api-status');
+const tabButtons = [...document.querySelectorAll('.tab-button')];
+const tabLinks = [...document.querySelectorAll('[data-tab-link]')];
+const tabPanels = [...document.querySelectorAll('.tab-panel')];
 const composer = document.querySelector('#composer');
 const channelInput = document.querySelector('#channel-id');
 const imageInput = document.querySelector('#image-file');
@@ -56,6 +61,8 @@ async function init() {
 function bindEvents() {
   loginForm.addEventListener('submit', handleLogin);
   logoutButton.addEventListener('click', handleLogout);
+  tabButtons.forEach((button) => button.addEventListener('click', () => setActiveTab(button.dataset.tab)));
+  tabLinks.forEach((button) => button.addEventListener('click', () => setActiveTab(button.dataset.tabLink)));
   composer.addEventListener('submit', handleSend);
   imageInput.addEventListener('change', handleImageChange);
   addSectionButton.addEventListener('click', () => addSection(''));
@@ -114,8 +121,10 @@ async function checkApiStatus() {
     const botText = ping.botReady || health.botReady ? `Bot online${ping.tag ? `: ${ping.tag}` : ''}` : 'Bot not ready';
 
     setApiStatus(`API connected. ${botText}.`, 'success');
+    dashboardApiStatus.textContent = 'Connected';
   } catch (error) {
     setApiStatus(`API check failed on ${window.location.origin}: ${error.message}`, 'error');
+    dashboardApiStatus.textContent = 'Check failed';
   }
 }
 
@@ -149,6 +158,8 @@ async function handleSend(event) {
 function showLogin() {
   dashboardView.hidden = true;
   loginView.hidden = false;
+  document.body.classList.add('login-active');
+  document.body.classList.remove('dashboard-active');
 
   if (new URLSearchParams(window.location.search).get('loginError') === 'invalid') {
     loginError.textContent = 'Invalid dashboard password.';
@@ -161,7 +172,10 @@ function showLogin() {
 function showDashboard(session) {
   loginView.hidden = true;
   dashboardView.hidden = false;
+  document.body.classList.remove('login-active');
+  document.body.classList.add('dashboard-active');
   setBotStatus(Boolean(session?.botReady), session?.tag);
+  setActiveTab(getActiveTab());
 
   if (sectionsContainer.children.length === 0) {
     addSection(welcomeStarter);
@@ -171,9 +185,28 @@ function showDashboard(session) {
 }
 
 function setBotStatus(isReady, tag) {
-  botStatus.textContent = isReady ? `Online${tag ? `: ${tag}` : ''}` : 'Bot not ready';
+  const text = isReady ? `Online${tag ? `: ${tag}` : ''}` : 'Bot not ready';
+
+  botStatus.textContent = text;
+  overviewBotStatus.textContent = text;
   botStatus.classList.toggle('ready', isReady);
   botStatus.classList.toggle('offline', !isReady);
+}
+
+function getActiveTab() {
+  return tabButtons.find((button) => button.getAttribute('aria-selected') === 'true')?.dataset.tab || 'overview';
+}
+
+function setActiveTab(tab) {
+  const nextTab = tabButtons.some((button) => button.dataset.tab === tab) ? tab : 'overview';
+
+  for (const button of tabButtons) {
+    button.setAttribute('aria-selected', String(button.dataset.tab === nextTab));
+  }
+
+  for (const panel of tabPanels) {
+    panel.hidden = panel.dataset.panel !== nextTab;
+  }
 }
 
 function addSection(value) {

@@ -33,7 +33,7 @@
         <header class="topbar">
           <div>
             <p class="eyebrow">Interface Society</p>
-            <h1>Message Composer</h1>
+            <h1>Relay Dashboard</h1>
           </div>
           <div class="status-cluster">
             <span id="bot-status" class="status-pill">Checking</span>
@@ -41,54 +41,111 @@
           </div>
         </header>
 
-        <section class="workspace">
-          <form id="composer" class="composer">
-            <div class="form-grid">
-              <label class="field span-2">
-                Channel ID
-                <input id="channel-id" name="channelId" inputmode="numeric" placeholder="1350095949896093764" required />
-              </label>
+        <nav class="dashboard-tabs" aria-label="Dashboard tabs">
+          <button class="tab-button" type="button" data-tab="overview" aria-selected="true">Overview</button>
+          <button class="tab-button" type="button" data-tab="messages" aria-selected="false">Messages</button>
+          <button class="tab-button" type="button" data-tab="settings" aria-selected="false">Settings</button>
+        </nav>
 
-              <label class="field">
-                Header image
-                <input id="image-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
-              </label>
+        <section class="tab-panel" data-panel="overview">
+          <div class="metric-grid">
+            <section class="metric-panel">
+              <p class="metric-label">Bot</p>
+              <strong id="overview-bot-status">Checking</strong>
+            </section>
+            <section class="metric-panel">
+              <p class="metric-label">Guild</p>
+              <strong>Interface Society</strong>
+            </section>
+            <section class="metric-panel">
+              <p class="metric-label">Default Channel</p>
+              <strong>1350095949896093764</strong>
+            </section>
+          </div>
 
-              <label class="toggle-row">
-                <input id="allow-mentions" type="checkbox" />
-                <span>Allow mentions</span>
-              </label>
-            </div>
-
+          <section class="dashboard-panel">
             <div class="toolbar-row">
-              <h2>Text Sections</h2>
-              <button id="add-section" class="secondary" type="button">Add Text</button>
+              <h2>Messages</h2>
+              <button class="secondary" type="button" data-tab-link="messages">Open Composer</button>
             </div>
-            <div id="sections" class="stack"></div>
+          </section>
+        </section>
 
+        <section class="tab-panel" data-panel="messages" hidden>
+          <section class="workspace">
+            <form id="composer" class="composer">
+              <div class="form-grid">
+                <label class="field span-2">
+                  Channel ID
+                  <input
+                    id="channel-id"
+                    name="channelId"
+                    inputmode="numeric"
+                    placeholder="1350095949896093764"
+                    required
+                  />
+                </label>
+
+                <label class="field">
+                  Header image
+                  <input id="image-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
+                </label>
+
+                <label class="toggle-row">
+                  <input id="allow-mentions" type="checkbox" />
+                  <span>Allow mentions</span>
+                </label>
+              </div>
+
+              <div class="toolbar-row">
+                <h2>Text Sections</h2>
+                <button id="add-section" class="secondary" type="button">Add Text</button>
+              </div>
+              <div id="sections" class="stack"></div>
+
+              <div class="toolbar-row">
+                <h2>Buttons</h2>
+                <button id="add-button" class="secondary" type="button">Add Button</button>
+              </div>
+              <div id="buttons" class="stack"></div>
+
+              <div class="action-row">
+                <button id="send" type="submit">Send Message</button>
+                <p id="send-status" class="send-status" role="status"></p>
+              </div>
+            </form>
+
+            <aside class="preview-panel">
+              <div class="toolbar-row">
+                <h2>Preview</h2>
+                <span id="section-count" class="muted">0 sections</span>
+              </div>
+              <div class="discord-preview">
+                <img id="preview-image" alt="" hidden />
+                <div id="preview-sections"></div>
+                <div id="preview-buttons" class="preview-buttons"></div>
+              </div>
+            </aside>
+          </section>
+        </section>
+
+        <section class="tab-panel" data-panel="settings" hidden>
+          <section class="dashboard-panel">
             <div class="toolbar-row">
-              <h2>Buttons</h2>
-              <button id="add-button" class="secondary" type="button">Add Button</button>
+              <h2>Session</h2>
+              <button class="secondary" type="button" data-tab-link="messages">Composer</button>
             </div>
-            <div id="buttons" class="stack"></div>
-
-            <div class="action-row">
-              <button id="send" type="submit">Send Message</button>
-              <p id="send-status" class="send-status" role="status"></p>
+            <div class="settings-grid">
+              <section class="metric-panel">
+                <p class="metric-label">API</p>
+                <strong id="dashboard-api-status">Connected</strong>
+              </section>
+              <section class="metric-panel">
+                <p class="metric-label">Access</p>
+                <strong>Private</strong>
+              </section>
             </div>
-          </form>
-
-          <aside class="preview-panel">
-            <div class="toolbar-row">
-              <h2>Preview</h2>
-              <span id="section-count" class="muted">0 sections</span>
-            </div>
-            <div class="discord-preview">
-              <img id="preview-image" alt="" hidden />
-              <div id="preview-sections"></div>
-              <div id="preview-buttons" class="preview-buttons"></div>
-            </div>
-          </aside>
+          </section>
         </section>
       </section>
     </main>
