@@ -112,11 +112,13 @@ async function handleLogin(client, request, response) {
   }
 
   console.log('Dashboard login succeeded.');
-  setCookie(response, sessionCookieName, createSessionValue(), {
+  const sessionToken = createSessionValue();
+
+  setCookie(response, sessionCookieName, sessionToken, {
     maxAge: 7 * 24 * 60 * 60,
     secure: isSecureRequest(request),
   });
-  sendJson(response, 200, { ok: true, botReady: client.isReady(), tag: client.user?.tag || null });
+  sendJson(response, 200, { ok: true, botReady: client.isReady(), tag: client.user?.tag || null, sessionToken });
 }
 
 async function handleClassicLogin(client, request, response) {
@@ -290,17 +292,29 @@ function parseCookies(request) {
 
 function isAuthenticated(request) {
   const cookie = parseCookies(request)[sessionCookieName];
+  const bearerToken = readBearerToken(request);
   const expected = createSessionValue();
 
-  if (!cookie || cookie.length !== expected.length) {
-    return false;
-  }
-
-  return crypto.timingSafeEqual(Buffer.from(cookie), Buffer.from(expected));
+  return matchesSessionValue(cookie, expected) || matchesSessionValue(bearerToken, expected);
 }
 
 function createSessionValue() {
   return crypto.createHmac('sha256', config.dashboard.password).update('relay-dashboard-session').digest('hex');
+}
+
+function matchesSessionValue(value, expected) {
+  if (!value || value.length !== expected.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(Buffer.from(value), Buffer.from(expected));
+}
+
+function readBearerToken(request) {
+  const authorization = String(request.headers.authorization || '');
+  const [scheme, token] = authorization.split(/\s+/, 2);
+
+  return scheme.toLowerCase() === 'bearer' ? token : undefined;
 }
 
 function setCookie(response, name, value, options = {}) {

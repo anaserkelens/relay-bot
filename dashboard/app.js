@@ -22,6 +22,7 @@ const previewImage = document.querySelector('#preview-image');
 const previewSections = document.querySelector('#preview-sections');
 const previewButtons = document.querySelector('#preview-buttons');
 const sectionCount = document.querySelector('#section-count');
+const sessionStorageKey = 'relay_dashboard_session';
 
 const state = {
   image: null,
@@ -47,6 +48,7 @@ async function init() {
   if (session?.ok) {
     showDashboard(session);
   } else {
+    clearSessionToken();
     showLogin();
   }
 }
@@ -78,15 +80,19 @@ async function handleLogin(event) {
     await api('/api/ping');
     loginButton.textContent = 'Logging in...';
 
-    await api('/api/login', {
+    const loginResult = await api('/api/login', {
       method: 'POST',
       body: { password: passwordInput.value.trim() },
     });
 
-    const session = await api('/api/session').catch(() => null);
+    if (loginResult.sessionToken) {
+      setSessionToken(loginResult.sessionToken);
+    }
+
+    const session = await api('/api/session').catch(() => loginResult);
 
     if (!session?.ok) {
-      throw new Error('Password accepted, but the browser did not keep the dashboard session. Refresh and try again.');
+      throw new Error('Password accepted, but the dashboard session could not be verified. Refresh and try again.');
     }
 
     showDashboard(session);
@@ -115,6 +121,7 @@ async function checkApiStatus() {
 
 async function handleLogout() {
   await api('/api/logout', { method: 'POST', body: {} }).catch(() => null);
+  clearSessionToken();
   showLogin();
 }
 
@@ -316,13 +323,23 @@ function readFileAsDataUrl(file) {
 async function api(path, options = {}) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
+  const headers = {};
+  const sessionToken = getSessionToken();
+
+  if (options.body) {
+    headers['Content-Type'] = 'application/json';
+  }
+
+  if (sessionToken) {
+    headers.Authorization = `Bearer ${sessionToken}`;
+  }
 
   let response;
 
   try {
     response = await fetch(path, {
       method: options.method || 'GET',
-      headers: options.body ? { 'Content-Type': 'application/json' } : undefined,
+      headers: Object.keys(headers).length ? headers : undefined,
       body: options.body ? JSON.stringify(options.body) : undefined,
       cache: 'no-store',
       credentials: 'same-origin',
@@ -354,4 +371,28 @@ async function api(path, options = {}) {
   }
 
   return data;
+}
+
+function getSessionToken() {
+  try {
+    return window.localStorage.getItem(sessionStorageKey);
+  } catch {
+    return null;
+  }
+}
+
+function setSessionToken(value) {
+  try {
+    window.localStorage.setItem(sessionStorageKey, value);
+  } catch {
+    // Cookies can still carry the session if local storage is unavailable.
+  }
+}
+
+function clearSessionToken() {
+  try {
+    window.localStorage.removeItem(sessionStorageKey);
+  } catch {
+    // Ignore storage failures; logout still clears the server cookie.
+  }
 }
