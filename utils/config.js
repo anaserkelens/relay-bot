@@ -49,7 +49,8 @@ const config = {
   clientId: readEnv('DISCORD_CLIENT_ID') || readEnv('CLIENT_ID') || '1512406303287541841',
   guildId: readEnv('DISCORD_GUILD_ID') || '1350095949896093761',
   autoRegisterCommands: readBoolean('AUTO_REGISTER_COMMANDS', true),
-  presenceText: readEnv('PRESENCE_TEXT') || 'Interface Society',
+  presenceText: readEnv('PRESENCE_TEXT') || 'Keeping every layer in place.',
+  presenceUrl: readEnv('PRESENCE_URL') || 'https://www.twitch.tv/interface_society',
   communityName: readEnv('COMMUNITY_NAME') || 'Interface Society',
   communityDescription:
     readEnv('COMMUNITY_DESCRIPTION') ||
