@@ -35,7 +35,16 @@ function createDashboardMessagePayload(input, config) {
 
   for (const block of blocks) {
     if (block.type === 'text') {
-      component.addTextDisplayComponents((textDisplay) => textDisplay.setContent(block.content));
+      if (block.accessory) {
+        component.addSectionComponents((section) =>
+          section
+            .addTextDisplayComponents((textDisplay) => textDisplay.setContent(block.content))
+            .setButtonAccessory((button) => button.setLabel(block.accessory.label).setURL(block.accessory.url)),
+        );
+      } else {
+        component.addTextDisplayComponents((textDisplay) => textDisplay.setContent(block.content));
+      }
+
       continue;
     }
 
@@ -91,6 +100,7 @@ function normalizeBlocks(blocks, sections) {
       }
 
       normalized.push({ type: 'text', content });
+      normalized[normalized.length - 1].accessory = normalizeAccessory(block?.accessory);
       continue;
     }
 
@@ -144,6 +154,31 @@ function normalizeSpacing(spacing) {
   return String(spacing || '').toLowerCase() === 'large'
     ? SeparatorSpacingSize.Large
     : SeparatorSpacingSize.Small;
+}
+
+function normalizeAccessory(accessory) {
+  if (!accessory || typeof accessory !== 'object') {
+    return null;
+  }
+
+  const label = String(accessory.label || '').trim();
+  const url = String(accessory.url || '').trim();
+
+  if (!label && !url) {
+    return null;
+  }
+
+  if (!label || !url) {
+    throw new Error('Accessory buttons need both a label and URL.');
+  }
+
+  if (label.length > 80) {
+    throw new Error('Accessory button labels must be 80 characters or fewer.');
+  }
+
+  assertHttpUrl(url, 'Accessory button URL');
+
+  return { label, url };
 }
 
 function normalizeButtons(buttons) {

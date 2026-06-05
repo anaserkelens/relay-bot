@@ -58,7 +58,7 @@ const seededWelcomeMessage = {
   name: 'Welcome Message',
   channelId: '1350095949896093764',
   image: null,
-  blocks: [{ type: 'text', content: welcomeStarter }],
+  blocks: [{ type: 'text', content: welcomeStarter, accessory: null }],
   buttons: [
     {
       label: 'Guidelines',
@@ -331,7 +331,7 @@ function applyMessage(message) {
 
   for (const block of message.blocks || []) {
     if (block.type === 'text') {
-      addSection(block.content);
+      addSection(block.content, block.accessory);
       continue;
     }
 
@@ -418,6 +418,7 @@ function sanitizeBlocks(message) {
         return {
           type,
           content: String(block.content || ''),
+          accessory: sanitizeAccessory(block.accessory),
         };
       }
 
@@ -457,9 +458,11 @@ function createSavedMessageMeta(message) {
   const textCount = message.blocks.filter((block) => block.type === 'text' && block.content.trim()).length;
   const dividerCount = message.blocks.filter((block) => block.type === 'divider').length;
   const spacerCount = message.blocks.filter((block) => block.type === 'spacer').length;
+  const accessoryCount = message.blocks.filter((block) => block.type === 'text' && block.accessory?.label && block.accessory?.url).length;
   const buttonCount = message.buttons.filter((button) => button.label.trim() && button.url.trim()).length;
+  const totalButtonCount = accessoryCount + buttonCount;
 
-  return `${textCount} text, ${dividerCount + spacerCount} layout, ${buttonCount} ${buttonCount === 1 ? 'button' : 'buttons'}`;
+  return `${textCount} text, ${dividerCount + spacerCount} layout, ${totalButtonCount} ${totalButtonCount === 1 ? 'button' : 'buttons'}`;
 }
 
 function createUntitledMessageName() {
@@ -474,7 +477,7 @@ function createId() {
   return `message-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-function addSection(value) {
+function addSection(value, accessory = null) {
   const index = sectionsContainer.querySelectorAll('.text-block').length + 1;
   const block = document.createElement('section');
   block.className = 'text-block content-block';
@@ -482,12 +485,40 @@ function addSection(value) {
   block.innerHTML = `
     <div class="block-header">
       <h2>Text ${index}</h2>
-      <button class="secondary remove" type="button">Remove</button>
+      <div class="block-actions">
+        <button class="secondary move-up" type="button">Up</button>
+        <button class="secondary move-down" type="button">Down</button>
+        <button class="secondary remove" type="button">Remove</button>
+      </div>
     </div>
     <textarea class="section-input" spellcheck="true"></textarea>
+    <label class="toggle-row">
+      <input class="accessory-enabled" type="checkbox" />
+      <span>Accessory button</span>
+    </label>
+    <div class="button-fields accessory-fields" hidden>
+      <label class="field">
+        Label
+        <input class="accessory-label" maxlength="80" />
+      </label>
+      <label class="field">
+        URL
+        <input class="accessory-url" type="url" />
+      </label>
+    </div>
   `;
 
   block.querySelector('textarea').value = value;
+  block.querySelector('.accessory-enabled').checked = Boolean(accessory);
+  block.querySelector('.accessory-label').value = accessory?.label || '';
+  block.querySelector('.accessory-url').value = accessory?.url || '';
+  updateAccessoryFields(block);
+  block.querySelector('.accessory-enabled').addEventListener('change', () => {
+    updateAccessoryFields(block);
+    updatePreview();
+  });
+  block.querySelector('.move-up').addEventListener('click', () => moveBlock(block, -1));
+  block.querySelector('.move-down').addEventListener('click', () => moveBlock(block, 1));
   block.querySelector('.remove').addEventListener('click', () => {
     block.remove();
     updatePreview();
@@ -514,7 +545,11 @@ function addLayoutBlock(type, spacing) {
   block.innerHTML = `
     <div class="block-header">
       <h2>${isDivider ? 'Divider' : 'Spacer'}</h2>
-      <button class="secondary remove" type="button">Remove</button>
+      <div class="block-actions">
+        <button class="secondary move-up" type="button">Up</button>
+        <button class="secondary move-down" type="button">Down</button>
+        <button class="secondary remove" type="button">Remove</button>
+      </div>
     </div>
     <label class="field">
       Spacing
@@ -526,6 +561,8 @@ function addLayoutBlock(type, spacing) {
   `;
 
   block.querySelector('.block-spacing').value = normalizeBlockSpacing(spacing);
+  block.querySelector('.move-up').addEventListener('click', () => moveBlock(block, -1));
+  block.querySelector('.move-down').addEventListener('click', () => moveBlock(block, 1));
   block.querySelector('.remove').addEventListener('click', () => {
     block.remove();
     updatePreview();
@@ -611,6 +648,7 @@ function collectBlocks() {
         return {
           type,
           content: block.querySelector('.section-input').value,
+          accessory: collectAccessory(block),
         };
       }
 
@@ -647,10 +685,7 @@ function updatePreview() {
 
   for (const block of blocks) {
     if (block.type === 'text') {
-      const pre = document.createElement('pre');
-      pre.className = 'preview-section';
-      pre.textContent = block.content.trim();
-      previewSections.append(pre);
+      previewSections.append(createTextPreviewBlock(block));
       continue;
     }
 
@@ -775,4 +810,69 @@ function clearSessionToken() {
 
 function normalizeBlockSpacing(spacing) {
   return String(spacing || '').toLowerCase() === 'large' ? 'large' : 'small';
+}
+
+function sanitizeAccessory(accessory) {
+  if (!accessory || typeof accessory !== 'object') {
+    return null;
+  }
+
+  const label = String(accessory.label || '');
+  const url = String(accessory.url || '');
+
+  return label || url ? { label, url } : null;
+}
+
+function collectAccessory(block) {
+  if (!block.querySelector('.accessory-enabled')?.checked) {
+    return null;
+  }
+
+  return {
+    label: block.querySelector('.accessory-label').value,
+    url: block.querySelector('.accessory-url').value,
+  };
+}
+
+function updateAccessoryFields(block) {
+  block.querySelector('.accessory-fields').hidden = !block.querySelector('.accessory-enabled').checked;
+}
+
+function moveBlock(block, direction) {
+  if (direction < 0 && block.previousElementSibling) {
+    sectionsContainer.insertBefore(block, block.previousElementSibling);
+  }
+
+  if (direction > 0 && block.nextElementSibling) {
+    sectionsContainer.insertBefore(block.nextElementSibling, block);
+  }
+
+  updatePreview();
+}
+
+function createTextPreviewBlock(block) {
+  const accessory = block.accessory?.label?.trim() && block.accessory?.url?.trim() ? block.accessory : null;
+
+  if (!accessory) {
+    const pre = document.createElement('pre');
+    pre.className = 'preview-section';
+    pre.textContent = block.content.trim();
+    return pre;
+  }
+
+  const wrapper = document.createElement('div');
+  const pre = document.createElement('pre');
+  const button = document.createElement('a');
+
+  wrapper.className = 'preview-section-with-accessory';
+  pre.className = 'preview-section';
+  pre.textContent = block.content.trim();
+  button.className = 'preview-button preview-accessory-button';
+  button.href = accessory.url;
+  button.target = '_blank';
+  button.rel = 'noreferrer';
+  button.textContent = accessory.label;
+  wrapper.append(pre, button);
+
+  return wrapper;
 }

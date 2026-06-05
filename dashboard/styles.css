@@ -515,10 +515,24 @@ textarea:focus {
 .block-header {
   align-items: center;
   display: flex;
+  gap: 10px;
   justify-content: space-between;
 }
 
+.block-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .remove {
+  min-height: 32px;
+  padding: 0 12px;
+}
+
+.move-up,
+.move-down {
   min-height: 32px;
   padding: 0 12px;
 }
@@ -582,6 +596,24 @@ textarea:focus {
   word-break: break-word;
 }
 
+.preview-section-with-accessory {
+  align-items: start;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.preview-section-with-accessory .preview-section {
+  min-width: 0;
+}
+
+.preview-accessory-button {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .preview-layout {
   border-radius: 999px;
   margin-left: 10px;
@@ -634,9 +666,14 @@ textarea:focus {
 
   .topbar,
   .toolbar-row,
+  .block-header,
   .action-row {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .preview-section-with-accessory {
+    grid-template-columns: 1fr;
   }
 
   .status-cluster {

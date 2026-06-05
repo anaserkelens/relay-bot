@@ -90,6 +90,38 @@ class TextDisplayBuilder {
   }
 }
 
+class SectionBuilder {
+  constructor() {
+    this.components = [];
+    this.accessory = null;
+  }
+
+  addTextDisplayComponents(...callbacks) {
+    for (const callback of callbacks) {
+      const textDisplay = new TextDisplayBuilder();
+      callback(textDisplay);
+      this.components.push(textDisplay.build());
+    }
+
+    return this;
+  }
+
+  setButtonAccessory(callback) {
+    const button = new ButtonBuilder();
+    callback(button);
+    this.accessory = button.build();
+    return this;
+  }
+
+  build() {
+    return {
+      type: 9,
+      components: this.components,
+      accessory: this.accessory,
+    };
+  }
+}
+
 class ButtonBuilder {
   constructor() {
     this.data = {
@@ -170,6 +202,13 @@ class ContainerBuilder {
     const textDisplay = new TextDisplayBuilder();
     callback(textDisplay);
     this.components.push(textDisplay.build());
+    return this;
+  }
+
+  addSectionComponents(callback) {
+    const section = new SectionBuilder();
+    callback(section);
+    this.components.push(section.build());
     return this;
   }
 
