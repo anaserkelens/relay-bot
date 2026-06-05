@@ -10,7 +10,7 @@ async function execute(client) {
   console.log(`Logged in as ${client.user.tag}`);
 
   client.user.setPresence({
-    activities: [{ name: config.presenceText, type: ActivityType.Streaming, url: config.presenceUrl }],
+    activities: [{ name: config.presenceText, type: ActivityType.Watching }],
     status: 'online',
   });
 
