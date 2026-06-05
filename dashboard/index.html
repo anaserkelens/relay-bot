@@ -44,6 +44,7 @@
         <nav class="dashboard-tabs" aria-label="Dashboard tabs">
           <button class="tab-button" type="button" data-tab="overview" aria-selected="true">Overview</button>
           <button class="tab-button" type="button" data-tab="messages" aria-selected="false">Messages</button>
+          <button class="tab-button" type="button" data-tab="bot" aria-selected="false">Bot</button>
           <button class="tab-button" type="button" data-tab="settings" aria-selected="false">Settings</button>
         </nav>
 
@@ -149,6 +150,102 @@
               </div>
             </aside>
           </section>
+        </section>
+
+        <section class="tab-panel" data-panel="bot" hidden>
+          <div class="bot-grid">
+            <section class="dashboard-panel bot-identity-panel">
+              <div class="toolbar-row">
+                <div>
+                  <h2>Bot Profile</h2>
+                  <span id="bot-profile-tag" class="muted">Loading profile</span>
+                </div>
+                <button id="refresh-bot" class="secondary" type="button">Refresh</button>
+              </div>
+
+              <div class="bot-banner-frame">
+                <img id="bot-banner-preview" alt="Bot banner preview" hidden />
+                <span id="bot-banner-placeholder">No banner set</span>
+              </div>
+
+              <div class="bot-avatar-row">
+                <img id="bot-avatar-preview" class="bot-avatar-preview" alt="Bot avatar preview" />
+                <div>
+                  <strong id="bot-profile-name">Relay</strong>
+                  <span id="bot-profile-id" class="muted">Waiting for Discord</span>
+                </div>
+              </div>
+            </section>
+
+            <section class="dashboard-panel">
+              <div>
+                <h2>Profile Images</h2>
+                <span class="muted">PNG, JPG, GIF, or WebP. Keep them under the dashboard upload limit.</span>
+              </div>
+
+              <div class="bot-upload-grid">
+                <label class="field">
+                  Avatar
+                  <input id="bot-avatar-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
+                </label>
+                <button id="save-bot-avatar" type="button">Update Avatar</button>
+
+                <label class="field">
+                  Banner
+                  <input id="bot-banner-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
+                </label>
+                <button id="save-bot-banner" type="button">Update Banner</button>
+              </div>
+            </section>
+
+            <section class="dashboard-panel bot-presence-panel">
+              <div>
+                <h2>Presence</h2>
+                <span class="muted">Changes apply immediately while the bot is online.</span>
+              </div>
+
+              <form id="bot-presence-form" class="bot-presence-form">
+                <label class="field">
+                  Status
+                  <select id="presence-status">
+                    <option value="online">Online</option>
+                    <option value="idle">Idle</option>
+                    <option value="dnd">Do Not Disturb</option>
+                    <option value="invisible">Invisible</option>
+                  </select>
+                </label>
+
+                <label class="field">
+                  Activity
+                  <select id="presence-activity-type">
+                    <option value="Watching">Watching</option>
+                    <option value="Playing">Playing</option>
+                    <option value="Listening">Listening</option>
+                    <option value="Competing">Competing</option>
+                    <option value="Streaming">Streaming</option>
+                  </select>
+                </label>
+
+                <label class="field span-2">
+                  Activity text
+                  <input
+                    id="presence-activity-name"
+                    maxlength="128"
+                    placeholder="Keeping every layer in place."
+                  />
+                </label>
+
+                <label id="presence-url-field" class="field span-2" hidden>
+                  Streaming URL
+                  <input id="presence-activity-url" type="url" placeholder="https://twitch.tv/..." />
+                </label>
+
+                <div class="action-row span-2">
+                  <button id="save-bot-presence" type="submit">Update Presence</button>
+                </div>
+              </form>
+            </section>
+          </div>
         </section>
 
         <section class="tab-panel" data-panel="settings" hidden>

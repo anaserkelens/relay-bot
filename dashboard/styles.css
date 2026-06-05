@@ -345,6 +345,88 @@ h2 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.bot-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(320px, 0.95fr) minmax(0, 1.05fr);
+}
+
+.bot-identity-panel {
+  align-content: start;
+  grid-row: span 2;
+}
+
+.bot-banner-frame {
+  position: relative;
+  display: grid;
+  height: 190px;
+  overflow: hidden;
+  border: 1px solid rgba(20, 30, 48, 0.08);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(0, 122, 255, 0.1), rgba(19, 166, 111, 0.08)),
+    rgba(255, 255, 255, 0.48);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.74);
+  place-items: center;
+}
+
+#bot-banner-preview {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+#bot-banner-placeholder {
+  color: rgba(29, 29, 31, 0.46);
+  font-size: 13px;
+  font-weight: 720;
+}
+
+.bot-avatar-row {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+}
+
+.bot-avatar-row > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.bot-avatar-preview {
+  width: 88px;
+  height: 88px;
+  flex: 0 0 auto;
+  border: 3px solid rgba(255, 255, 255, 0.86);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: var(--shadow-soft);
+  object-fit: cover;
+}
+
+#bot-profile-name {
+  color: var(--text);
+  font-size: 22px;
+  font-weight: 760;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.bot-upload-grid {
+  align-items: end;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.bot-presence-form {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .metric-panel,
 .dashboard-panel {
   display: grid;
@@ -727,6 +809,9 @@ textarea:focus {
   .workspace,
   .form-grid,
   .button-fields,
+  .bot-grid,
+  .bot-upload-grid,
+  .bot-presence-form,
   .metric-grid,
   .settings-grid {
     grid-template-columns: 1fr;
@@ -739,9 +824,13 @@ textarea:focus {
   .topbar,
   .toolbar-row,
   .block-header,
-  .action-row {
+    .action-row {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .bot-identity-panel {
+    grid-row: auto;
   }
 
   .preview-section-with-accessory {

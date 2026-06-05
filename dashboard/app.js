@@ -15,6 +15,24 @@ const savedMessageCount = document.querySelector('#saved-message-count');
 const tabButtons = [...document.querySelectorAll('.tab-button')];
 const tabLinks = [...document.querySelectorAll('[data-tab-link]')];
 const tabPanels = [...document.querySelectorAll('.tab-panel')];
+const refreshBotButton = document.querySelector('#refresh-bot');
+const botProfileTag = document.querySelector('#bot-profile-tag');
+const botProfileName = document.querySelector('#bot-profile-name');
+const botProfileId = document.querySelector('#bot-profile-id');
+const botAvatarPreview = document.querySelector('#bot-avatar-preview');
+const botBannerPreview = document.querySelector('#bot-banner-preview');
+const botBannerPlaceholder = document.querySelector('#bot-banner-placeholder');
+const botAvatarInput = document.querySelector('#bot-avatar-file');
+const botBannerInput = document.querySelector('#bot-banner-file');
+const saveBotAvatarButton = document.querySelector('#save-bot-avatar');
+const saveBotBannerButton = document.querySelector('#save-bot-banner');
+const botPresenceForm = document.querySelector('#bot-presence-form');
+const presenceStatusInput = document.querySelector('#presence-status');
+const presenceActivityTypeInput = document.querySelector('#presence-activity-type');
+const presenceActivityNameInput = document.querySelector('#presence-activity-name');
+const presenceUrlField = document.querySelector('#presence-url-field');
+const presenceActivityUrlInput = document.querySelector('#presence-activity-url');
+const saveBotPresenceButton = document.querySelector('#save-bot-presence');
 const composer = document.querySelector('#composer');
 const messageNameInput = document.querySelector('#message-name');
 const channelInput = document.querySelector('#channel-id');
@@ -41,6 +59,8 @@ const welcomeMessageId = 'welcome-message';
 const state = {
   currentMessageId: null,
   image: null,
+  botAvatarImage: null,
+  botBannerImage: null,
   savedMessages: [],
   composerInitialized: false,
 };
@@ -97,6 +117,15 @@ function bindEvents() {
   logoutButton.addEventListener('click', handleLogout);
   tabButtons.forEach((button) => button.addEventListener('click', () => setActiveTab(button.dataset.tab)));
   tabLinks.forEach((button) => button.addEventListener('click', () => setActiveTab(button.dataset.tabLink)));
+  refreshBotButton.addEventListener('click', () => {
+    refreshBotSettings(true).catch((error) => setSendStatus(error.message, 'error'));
+  });
+  botAvatarInput.addEventListener('change', () => handleBotImageChange('avatar'));
+  botBannerInput.addEventListener('change', () => handleBotImageChange('banner'));
+  saveBotAvatarButton.addEventListener('click', () => handleUpdateBotImage('avatar'));
+  saveBotBannerButton.addEventListener('click', () => handleUpdateBotImage('banner'));
+  botPresenceForm.addEventListener('submit', handleUpdateBotPresence);
+  presenceActivityTypeInput.addEventListener('change', updatePresenceUrlVisibility);
   composer.addEventListener('submit', handleSend);
   savedMessagesContainer.addEventListener('click', handleSavedMessageClick);
   imageInput.addEventListener('change', handleImageChange);
@@ -198,6 +227,145 @@ async function handleSend(event) {
   }
 }
 
+async function refreshBotSettings(showNotification = false) {
+  const bot = await api('/api/bot');
+
+  renderBotSettings(bot);
+
+  if (showNotification) {
+    setSendStatus('Bot profile refreshed.', 'success');
+  }
+}
+
+function renderBotSettings(bot) {
+  if (!bot?.ok) {
+    return;
+  }
+
+  setBotStatus(Boolean(bot.botReady), bot.tag);
+  botProfileTag.textContent = bot.tag || 'Bot not ready';
+  botProfileName.textContent = bot.username || bot.tag || 'Relay';
+  botProfileId.textContent = bot.id ? `ID ${bot.id}` : 'Waiting for Discord';
+
+  if (bot.avatarUrl) {
+    botAvatarPreview.src = bot.avatarUrl;
+    botAvatarPreview.hidden = false;
+  }
+
+  if (bot.bannerUrl) {
+    botBannerPreview.src = bot.bannerUrl;
+    botBannerPreview.hidden = false;
+    botBannerPlaceholder.hidden = true;
+  } else {
+    botBannerPreview.hidden = true;
+    botBannerPreview.removeAttribute('src');
+    botBannerPlaceholder.hidden = false;
+  }
+
+  const presence = bot.presence || {};
+  presenceStatusInput.value = normalizePresenceStatus(presence.status);
+  presenceActivityTypeInput.value = normalizeActivityType(presence.activityType);
+  presenceActivityNameInput.value = presence.activityName || '';
+  presenceActivityUrlInput.value = presence.activityUrl || '';
+  updatePresenceUrlVisibility();
+}
+
+async function handleBotImageChange(kind) {
+  const input = kind === 'avatar' ? botAvatarInput : botBannerInput;
+  const file = input.files[0];
+
+  if (!file) {
+    if (kind === 'avatar') {
+      state.botAvatarImage = null;
+    } else {
+      state.botBannerImage = null;
+    }
+
+    return;
+  }
+
+  if (!file.type.startsWith('image/')) {
+    setSendStatus('Select an image file.', 'error');
+    input.value = '';
+    return;
+  }
+
+  const image = {
+    name: file.name,
+    dataUrl: await readFileAsDataUrl(file),
+  };
+
+  if (kind === 'avatar') {
+    state.botAvatarImage = image;
+    botAvatarPreview.src = image.dataUrl;
+    botAvatarPreview.hidden = false;
+  } else {
+    state.botBannerImage = image;
+    botBannerPreview.src = image.dataUrl;
+    botBannerPreview.hidden = false;
+    botBannerPlaceholder.hidden = true;
+  }
+}
+
+async function handleUpdateBotImage(kind) {
+  const isAvatar = kind === 'avatar';
+  const image = isAvatar ? state.botAvatarImage : state.botBannerImage;
+  const button = isAvatar ? saveBotAvatarButton : saveBotBannerButton;
+  const input = isAvatar ? botAvatarInput : botBannerInput;
+
+  if (!image) {
+    setSendStatus(`Choose a bot ${kind} image first.`, 'error');
+    return;
+  }
+
+  button.disabled = true;
+
+  try {
+    const bot = await api(`/api/bot/${kind}`, {
+      method: 'POST',
+      body: { image },
+    });
+
+    if (isAvatar) {
+      state.botAvatarImage = null;
+    } else {
+      state.botBannerImage = null;
+    }
+
+    input.value = '';
+    renderBotSettings(bot);
+    setSendStatus(`Bot ${kind} updated.`, 'success');
+  } catch (error) {
+    setSendStatus(error.message, 'error');
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function handleUpdateBotPresence(event) {
+  event.preventDefault();
+  saveBotPresenceButton.disabled = true;
+
+  try {
+    const bot = await api('/api/bot/presence', {
+      method: 'POST',
+      body: {
+        status: presenceStatusInput.value,
+        activityType: presenceActivityTypeInput.value,
+        activityName: presenceActivityNameInput.value,
+        activityUrl: presenceActivityUrlInput.value,
+      },
+    });
+
+    renderBotSettings(bot);
+    setSendStatus('Bot presence updated.', 'success');
+  } catch (error) {
+    setSendStatus(error.message, 'error');
+  } finally {
+    saveBotPresenceButton.disabled = false;
+  }
+}
+
 function showLogin() {
   dashboardView.hidden = true;
   loginView.hidden = false;
@@ -220,6 +388,7 @@ function showDashboard(session) {
   setBotStatus(Boolean(session?.botReady), session?.tag);
   setActiveTab(getActiveTab());
   renderSavedMessages();
+  refreshBotSettings().catch((error) => setSendStatus(error.message, 'error'));
 
   if (!state.composerInitialized) {
     resetComposer();
@@ -249,6 +418,10 @@ function setActiveTab(tab) {
 
   for (const panel of tabPanels) {
     panel.hidden = panel.dataset.panel !== nextTab;
+  }
+
+  if (nextTab === 'bot' && !dashboardView.hidden) {
+    refreshBotSettings().catch((error) => setSendStatus(error.message, 'error'));
   }
 }
 
@@ -835,6 +1008,28 @@ function clearSessionToken() {
   } catch {
     // Ignore storage failures; logout still clears the server cookie.
   }
+}
+
+function normalizePresenceStatus(value) {
+  const status = String(value || '').toLowerCase();
+
+  return ['online', 'idle', 'dnd', 'invisible'].includes(status) ? status : 'online';
+}
+
+function normalizeActivityType(value) {
+  const activityType = String(value || '').toLowerCase();
+  const match = ['Watching', 'Playing', 'Listening', 'Competing', 'Streaming'].find(
+    (type) => type.toLowerCase() === activityType,
+  );
+
+  return match || 'Watching';
+}
+
+function updatePresenceUrlVisibility() {
+  const isStreaming = presenceActivityTypeInput.value === 'Streaming';
+
+  presenceUrlField.hidden = !isStreaming;
+  presenceActivityUrlInput.disabled = !isStreaming;
 }
 
 function normalizeBlockSpacing(spacing) {
