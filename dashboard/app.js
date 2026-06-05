@@ -250,6 +250,9 @@ function renderBotSettings(bot) {
   if (bot.avatarUrl) {
     botAvatarPreview.src = bot.avatarUrl;
     botAvatarPreview.hidden = false;
+  } else {
+    botAvatarPreview.hidden = true;
+    botAvatarPreview.removeAttribute('src');
   }
 
   if (bot.bannerUrl) {

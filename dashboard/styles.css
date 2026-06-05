@@ -824,7 +824,7 @@ textarea:focus {
   .topbar,
   .toolbar-row,
   .block-header,
-    .action-row {
+  .action-row {
     align-items: stretch;
     flex-direction: column;
   }
