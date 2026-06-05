@@ -1,0 +1,21 @@
+{
+  "name": "interface-society-relay-bot",
+  "version": "0.1.0",
+  "description": "Discord bot for the Interface Society community.",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node src/index.js",
+    "deploy:commands": "node src/deploy-commands.js",
+    "check": "node scripts/check-syntax.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.26.4",
+    "dotenv": "^17.4.2"
+  }
+}
