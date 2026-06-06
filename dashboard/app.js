@@ -598,9 +598,10 @@ async function loadSavedMessagesFromServer(options = {}) {
 
     state.savedMessages = ensureWelcomeMessage(mergeSavedMessages(serverMessages, localMessages));
     renderSavedMessages();
+    writeLocalSavedMessages(state.savedMessages);
 
-    if (localMessages.length > 0 && (await persistSavedMessages(false))) {
-      clearLocalSavedMessages();
+    if (localMessages.length > 0) {
+      await persistSavedMessages(false);
     }
 
     if (options.showNotification) {
@@ -632,6 +633,7 @@ async function persistSavedMessages(showError = true) {
     state.savedMessages = Array.isArray(result.messages)
       ? result.messages.map(sanitizeSavedMessage).filter(Boolean)
       : state.savedMessages;
+    writeLocalSavedMessages(state.savedMessages);
 
     return true;
   } catch (error) {
@@ -655,11 +657,11 @@ function readLocalSavedMessages() {
   return Array.isArray(messages) ? messages.map(sanitizeSavedMessage).filter(Boolean) : [];
 }
 
-function clearLocalSavedMessages() {
+function writeLocalSavedMessages(messages) {
   try {
-    window.localStorage.removeItem(savedMessagesStorageKey);
+    window.localStorage.setItem(savedMessagesStorageKey, JSON.stringify(messages));
   } catch {
-    // The shared server store has already been written, so this is safe to ignore.
+    // Server storage is still the source of truth if browser storage is unavailable.
   }
 }
 

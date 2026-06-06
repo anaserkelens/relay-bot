@@ -109,7 +109,9 @@ https://your-service.up.railway.app/
 
 The dashboard sends messages through the running bot, so no restart or slash command is needed. The bot must already be online, and it must have permission to send messages and attach files in the target channel.
 
-Saved dashboard messages are stored server-side at `data/saved-messages.json` by default, so every browser that logs into the dashboard sees the same saved messages. For storage that survives Railway redeploys, attach persistent storage and set `DASHBOARD_SAVED_MESSAGES_PATH` to a JSON file path inside that mounted storage.
+Saved dashboard messages are shared server-side while the bot is running. On Railway, attach a persistent volume if you want them to survive redeploys. When a Railway volume is attached, the bot automatically stores saved messages at `RAILWAY_VOLUME_MOUNT_PATH/saved-messages.json`; you can override that with `DASHBOARD_SAVED_MESSAGES_PATH`.
+
+The dashboard also keeps a browser backup after each successful save. If Railway starts with an empty store, opening a browser that still has that backup can repopulate the shared store.
 
 ## Adding Commands
 

@@ -100,6 +100,7 @@ const config = {
     maxBodyBytes: readInteger('DASHBOARD_MAX_BODY_MB', 12) * 1024 * 1024,
     maxUploadBytes: readInteger('DASHBOARD_MAX_UPLOAD_MB', 8) * 1024 * 1024,
     savedMessagesPath: readEnv('DASHBOARD_SAVED_MESSAGES_PATH'),
+    railwayVolumeMountPath: readEnv('RAILWAY_VOLUME_MOUNT_PATH'),
   },
 };
 

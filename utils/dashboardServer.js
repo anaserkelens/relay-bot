@@ -7,7 +7,7 @@ const { ActivityType } = require('discord.js');
 
 const { config } = require('./config');
 const { createDashboardMessagePayload } = require('./dashboardMessage');
-const { loadSavedMessages, saveSavedMessages } = require('./savedMessages');
+const { getSavedMessagesStorageInfo, loadSavedMessages, saveSavedMessages } = require('./savedMessages');
 
 const dashboardDirectory = path.join(__dirname, '..', 'dashboard');
 const sessionCookieName = 'relay_dashboard';
@@ -37,6 +37,8 @@ function startDashboard(client) {
     return null;
   }
 
+  logSavedMessagesStorage();
+
   const server = http.createServer((request, response) => {
     handleRequest(client, request, response).catch((error) => {
       console.error('Dashboard request error:', error);
@@ -53,6 +55,18 @@ function startDashboard(client) {
   });
 
   return server;
+}
+
+function logSavedMessagesStorage() {
+  const storage = getSavedMessagesStorageInfo(config);
+
+  console.log(
+    `Dashboard saved messages storage: ${storage.filePath} (${storage.persistent ? 'persistent' : 'ephemeral'}, ${storage.source}).`,
+  );
+
+  if (!storage.persistent) {
+    console.warn('Dashboard saved messages will reset after redeploys unless a Railway volume is attached.');
+  }
 }
 
 async function handleRequest(client, request, response) {

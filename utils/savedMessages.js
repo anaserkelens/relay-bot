@@ -97,7 +97,31 @@ async function writeSavedMessagesFile(filePath, messages) {
 }
 
 function getSavedMessagesPath(config) {
-  return config.dashboard.savedMessagesPath || defaultSavedMessagesPath;
+  return getSavedMessagesStorageInfo(config).filePath;
+}
+
+function getSavedMessagesStorageInfo(config) {
+  if (config.dashboard.savedMessagesPath) {
+    return {
+      filePath: config.dashboard.savedMessagesPath,
+      persistent: true,
+      source: 'DASHBOARD_SAVED_MESSAGES_PATH',
+    };
+  }
+
+  if (config.dashboard.railwayVolumeMountPath) {
+    return {
+      filePath: path.join(config.dashboard.railwayVolumeMountPath, 'saved-messages.json'),
+      persistent: true,
+      source: 'RAILWAY_VOLUME_MOUNT_PATH',
+    };
+  }
+
+  return {
+    filePath: defaultSavedMessagesPath,
+    persistent: false,
+    source: 'app filesystem',
+  };
 }
 
 function ensureSeedMessage(messages) {
@@ -226,6 +250,7 @@ function createId() {
 }
 
 module.exports = {
+  getSavedMessagesStorageInfo,
   loadSavedMessages,
   saveSavedMessages,
   seededWelcomeMessage,
