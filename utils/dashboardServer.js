@@ -352,7 +352,11 @@ async function createSavedMessageFromDiscordMessage(message, requestedName) {
   const components = normalizeComponentArray(message.components);
 
   for (const component of components) {
-    image = image || (await collectSavedMessageComponents(component, message, blocks, buttons));
+    const componentImage = await collectSavedMessageComponents(component, message, blocks, buttons);
+
+    if (!image && componentImage) {
+      image = componentImage;
+    }
   }
 
   if (!image && message.attachments?.size) {
@@ -388,7 +392,11 @@ async function collectSavedMessageComponents(component, message, blocks, buttons
     let image = null;
 
     for (const child of data.components) {
-      image = image || (await collectSavedMessageComponents(child, message, blocks, buttons));
+      const componentImage = await collectSavedMessageComponents(child, message, blocks, buttons);
+
+      if (!image && componentImage) {
+        image = componentImage;
+      }
     }
 
     return image;
