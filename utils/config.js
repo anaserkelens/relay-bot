@@ -99,6 +99,7 @@ const config = {
     port: readInteger('DASHBOARD_PORT', Number.parseInt(process.env.PORT, 10) || 3000),
     maxBodyBytes: readInteger('DASHBOARD_MAX_BODY_MB', 12) * 1024 * 1024,
     maxUploadBytes: readInteger('DASHBOARD_MAX_UPLOAD_MB', 8) * 1024 * 1024,
+    savedMessagesPath: readEnv('DASHBOARD_SAVED_MESSAGES_PATH'),
   },
 };
 

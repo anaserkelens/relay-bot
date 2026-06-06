@@ -97,7 +97,6 @@ init();
 
 async function init() {
   bindEvents();
-  loadSavedMessages();
   renderSavedMessages();
 
   checkApiStatus();
@@ -391,6 +390,7 @@ function showDashboard(session) {
   setBotStatus(Boolean(session?.botReady), session?.tag);
   setActiveTab(getActiveTab());
   renderSavedMessages();
+  loadSavedMessages().catch((error) => setSendStatus(error.message, 'error'));
   refreshBotSettings().catch((error) => setSendStatus(error.message, 'error'));
 
   if (!state.composerInitialized) {
@@ -426,6 +426,10 @@ function setActiveTab(tab) {
   if (nextTab === 'bot' && !dashboardView.hidden) {
     refreshBotSettings().catch((error) => setSendStatus(error.message, 'error'));
   }
+
+  if (nextTab === 'messages' && !dashboardView.hidden) {
+    loadSavedMessages().catch((error) => setSendStatus(error.message, 'error'));
+  }
 }
 
 function handleSavedMessageClick(event) {
@@ -438,7 +442,7 @@ function handleSavedMessageClick(event) {
   loadSavedMessage(button.dataset.messageId);
 }
 
-function handleSaveMessage() {
+async function handleSaveMessage() {
   const payload = collectPayload();
   const savedMessage = {
     id: state.currentMessageId || createId(),
@@ -458,7 +462,7 @@ function handleSaveMessage() {
     state.savedMessages = [savedMessage, ...state.savedMessages];
   }
 
-  if (!persistSavedMessages()) {
+  if (!(await persistSavedMessages())) {
     return;
   }
 
@@ -528,7 +532,53 @@ function applyMessage(message) {
   updatePreview();
 }
 
-function loadSavedMessages() {
+async function loadSavedMessages() {
+  const localMessages = readLocalSavedMessages();
+
+  try {
+    const result = await api('/api/saved-messages');
+    const serverMessages = Array.isArray(result.messages)
+      ? result.messages.map(sanitizeSavedMessage).filter(Boolean)
+      : [];
+
+    state.savedMessages = ensureWelcomeMessage(mergeSavedMessages(serverMessages, localMessages));
+    renderSavedMessages();
+
+    if (localMessages.length > 0 && (await persistSavedMessages(false))) {
+      clearLocalSavedMessages();
+    }
+  } catch (error) {
+    if (localMessages.length > 0) {
+      state.savedMessages = ensureWelcomeMessage(localMessages);
+      renderSavedMessages();
+    }
+
+    throw error;
+  }
+}
+
+async function persistSavedMessages(showError = true) {
+  try {
+    const result = await api('/api/saved-messages', {
+      method: 'PUT',
+      body: { messages: state.savedMessages },
+    });
+
+    state.savedMessages = Array.isArray(result.messages)
+      ? result.messages.map(sanitizeSavedMessage).filter(Boolean)
+      : state.savedMessages;
+
+    return true;
+  } catch (error) {
+    if (showError) {
+      setSendStatus(error.message, 'error');
+    }
+
+    return false;
+  }
+}
+
+function readLocalSavedMessages() {
   let messages = [];
 
   try {
@@ -537,26 +587,46 @@ function loadSavedMessages() {
     messages = [];
   }
 
-  if (!Array.isArray(messages)) {
-    messages = [];
-  }
+  return Array.isArray(messages) ? messages.map(sanitizeSavedMessage).filter(Boolean) : [];
+}
 
-  state.savedMessages = messages.map(sanitizeSavedMessage).filter(Boolean);
-
-  if (!state.savedMessages.some((message) => message.id === welcomeMessageId)) {
-    state.savedMessages = [seededWelcomeMessage, ...state.savedMessages];
-    persistSavedMessages();
+function clearLocalSavedMessages() {
+  try {
+    window.localStorage.removeItem(savedMessagesStorageKey);
+  } catch {
+    // The shared server store has already been written, so this is safe to ignore.
   }
 }
 
-function persistSavedMessages() {
-  try {
-    window.localStorage.setItem(savedMessagesStorageKey, JSON.stringify(state.savedMessages));
-    return true;
-  } catch {
-    setSendStatus('Could not save this message. Try removing the image or shortening the content.', 'error');
-    return false;
+function mergeSavedMessages(serverMessages, localMessages) {
+  const merged = [...serverMessages];
+
+  for (const localMessage of localMessages) {
+    const existingIndex = merged.findIndex((message) => message.id === localMessage.id);
+
+    if (existingIndex === -1) {
+      merged.unshift(localMessage);
+      continue;
+    }
+
+    if (isNewerSavedMessage(localMessage, merged[existingIndex])) {
+      merged[existingIndex] = localMessage;
+    }
   }
+
+  return merged;
+}
+
+function ensureWelcomeMessage(messages) {
+  if (messages.some((message) => message.id === welcomeMessageId)) {
+    return messages;
+  }
+
+  return [seededWelcomeMessage, ...messages];
+}
+
+function isNewerSavedMessage(candidate, current) {
+  return Date.parse(candidate.updatedAt || '') > Date.parse(current.updatedAt || '');
 }
 
 function sanitizeSavedMessage(message) {

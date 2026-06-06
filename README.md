@@ -80,6 +80,10 @@ https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=412317
    WELCOME_CHANNEL_ID
    AUTO_REGISTER_COMMANDS
    PRESENCE_TEXT
+   DASHBOARD_PASSWORD
+   DASHBOARD_MAX_BODY_MB
+   DASHBOARD_MAX_UPLOAD_MB
+   DASHBOARD_SAVED_MESSAGES_PATH
    ENABLE_SERVER_MEMBERS_INTENT
    ENABLE_MESSAGE_CONTENT_INTENT
    ENABLE_PRESENCE_INTENT
@@ -104,6 +108,8 @@ https://your-service.up.railway.app/
 ```
 
 The dashboard sends messages through the running bot, so no restart or slash command is needed. The bot must already be online, and it must have permission to send messages and attach files in the target channel.
+
+Saved dashboard messages are stored server-side at `data/saved-messages.json` by default, so every browser that logs into the dashboard sees the same saved messages. For storage that survives Railway redeploys, attach persistent storage and set `DASHBOARD_SAVED_MESSAGES_PATH` to a JSON file path inside that mounted storage.
 
 ## Adding Commands
 

@@ -7,6 +7,7 @@ const { ActivityType } = require('discord.js');
 
 const { config } = require('./config');
 const { createDashboardMessagePayload } = require('./dashboardMessage');
+const { loadSavedMessages, saveSavedMessages } = require('./savedMessages');
 
 const dashboardDirectory = path.join(__dirname, '..', 'dashboard');
 const sessionCookieName = 'relay_dashboard';
@@ -102,6 +103,16 @@ async function handleRequest(client, request, response) {
 
     if (request.method === 'GET' && url.pathname === '/api/session') {
       sendJson(response, 200, { ok: true, botReady: client.isReady(), tag: client.user?.tag || null });
+      return;
+    }
+
+    if (request.method === 'GET' && url.pathname === '/api/saved-messages') {
+      await handleGetSavedMessages(response);
+      return;
+    }
+
+    if (request.method === 'PUT' && url.pathname === '/api/saved-messages') {
+      await handleSaveSavedMessages(request, response);
       return;
     }
 
@@ -212,6 +223,32 @@ async function handleSendMessage(client, request, response) {
     channelId,
     messageId: message.id,
     url: message.url,
+  });
+}
+
+async function handleGetSavedMessages(response) {
+  const messages = await loadSavedMessages(config);
+
+  sendJson(response, 200, {
+    ok: true,
+    messages,
+  });
+}
+
+async function handleSaveSavedMessages(request, response) {
+  const body = await readJsonBody(request, config.dashboard.maxBodyBytes);
+  let messages;
+
+  try {
+    messages = await saveSavedMessages(config, body.messages);
+  } catch (error) {
+    sendJson(response, 400, { error: error.message });
+    return;
+  }
+
+  sendJson(response, 200, {
+    ok: true,
+    messages,
   });
 }
 
