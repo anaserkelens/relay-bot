@@ -130,6 +130,11 @@ async function handleRequest(client, request, response) {
       return;
     }
 
+    if (request.method === 'POST' && url.pathname === '/api/import-message') {
+      await handleImportMessage(client, request, response);
+      return;
+    }
+
     if (request.method === 'GET' && url.pathname === '/api/bot') {
       await handleGetBot(client, response);
       return;
@@ -264,6 +269,277 @@ async function handleSaveSavedMessages(request, response) {
     ok: true,
     messages,
   });
+}
+
+async function handleImportMessage(client, request, response) {
+  if (!client.isReady()) {
+    sendJson(response, 503, { error: 'Bot is not ready yet.' });
+    return;
+  }
+
+  const body = await readJsonBody(request, 256 * 1024);
+  let target;
+
+  try {
+    target = parseDiscordMessageLink(body.url || body.messageUrl || body.messageLink);
+  } catch (error) {
+    sendJson(response, 400, { error: error.message });
+    return;
+  }
+
+  const channel = await client.channels.fetch(target.channelId).catch(() => null);
+
+  if (!channel || !channel.messages || typeof channel.messages.fetch !== 'function') {
+    sendJson(response, 404, { error: 'Message channel was not found or is not readable by the bot.' });
+    return;
+  }
+
+  const message = await channel.messages.fetch(target.messageId).catch(() => null);
+
+  if (!message) {
+    sendJson(response, 404, { error: 'Discord message was not found.' });
+    return;
+  }
+
+  let importedMessage;
+
+  try {
+    importedMessage = await createSavedMessageFromDiscordMessage(message, body.name);
+  } catch (error) {
+    sendJson(response, 400, { error: error.message });
+    return;
+  }
+
+  const currentMessages = await loadSavedMessages(config);
+  const existingIndex = currentMessages.findIndex((savedMessage) => savedMessage.id === importedMessage.id);
+  const nextMessages = [...currentMessages];
+
+  if (existingIndex >= 0) {
+    nextMessages[existingIndex] = importedMessage;
+  } else {
+    nextMessages.unshift(importedMessage);
+  }
+
+  const messages = await saveSavedMessages(config, nextMessages);
+
+  sendJson(response, 200, {
+    ok: true,
+    message: importedMessage,
+    messages,
+  });
+}
+
+function parseDiscordMessageLink(value) {
+  const match = String(value || '').match(
+    /^https?:\/\/(?:canary\.|ptb\.)?discord(?:app)?\.com\/channels\/(\d{17,20})\/(\d{17,20})\/(\d{17,20})(?:\?.*)?$/i,
+  );
+
+  if (!match) {
+    throw new Error('Paste a valid Discord message link.');
+  }
+
+  return {
+    guildId: match[1],
+    channelId: match[2],
+    messageId: match[3],
+  };
+}
+
+async function createSavedMessageFromDiscordMessage(message, requestedName) {
+  const blocks = [];
+  const buttons = [];
+  let image = null;
+  const components = normalizeComponentArray(message.components);
+
+  for (const component of components) {
+    image = image || (await collectSavedMessageComponents(component, message, blocks, buttons));
+  }
+
+  if (!image && message.attachments?.size) {
+    image = await importFirstImageAttachment(message);
+  }
+
+  if (!image && blocks.length === 0 && buttons.length === 0) {
+    throw new Error('That message does not contain importable Components v2 content.');
+  }
+
+  const name = String(requestedName || '').trim() || deriveSavedMessageName(blocks) || 'Imported Message';
+
+  return {
+    id: `discord-message-${message.id}`,
+    name,
+    channelId: message.channelId || '',
+    image,
+    blocks,
+    buttons,
+    allowMentions: false,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+async function collectSavedMessageComponents(component, message, blocks, buttons) {
+  if (!component || typeof component !== 'object') {
+    return null;
+  }
+
+  const data = toComponentData(component);
+
+  if (data.type === 17 && Array.isArray(data.components)) {
+    let image = null;
+
+    for (const child of data.components) {
+      image = image || (await collectSavedMessageComponents(child, message, blocks, buttons));
+    }
+
+    return image;
+  }
+
+  if (data.type === 12) {
+    return importMediaGalleryImage(data, message);
+  }
+
+  if (data.type === 14) {
+    blocks.push({
+      type: data.divider ? 'divider' : 'spacer',
+      spacing: data.spacing === 2 ? 'large' : 'small',
+    });
+    return null;
+  }
+
+  if (data.type === 10 && data.content) {
+    blocks.push({
+      type: 'text',
+      content: String(data.content),
+      accessory: null,
+    });
+    return null;
+  }
+
+  if (data.type === 9) {
+    const content = normalizeComponentArray(data.components)
+      .filter((child) => child.type === 10 && child.content)
+      .map((child) => String(child.content))
+      .join('\n');
+
+    if (content) {
+      blocks.push({
+        type: 'text',
+        content,
+        accessory: normalizeLinkButton(data.accessory),
+      });
+    }
+
+    return null;
+  }
+
+  if (data.type === 1) {
+    for (const child of normalizeComponentArray(data.components)) {
+      const button = normalizeLinkButton(child);
+
+      if (button) {
+        buttons.push(button);
+      }
+    }
+  }
+
+  return null;
+}
+
+function normalizeComponentArray(components) {
+  return Array.isArray(components) ? components.map(toComponentData).filter(Boolean) : [];
+}
+
+function toComponentData(component) {
+  if (!component) {
+    return null;
+  }
+
+  if (typeof component.toJSON === 'function') {
+    return component.toJSON();
+  }
+
+  return component;
+}
+
+function normalizeLinkButton(component) {
+  const button = toComponentData(component);
+
+  if (!button || button.type !== 2 || !button.url) {
+    return null;
+  }
+
+  return {
+    label: String(button.label || 'Open'),
+    url: String(button.url),
+  };
+}
+
+async function importMediaGalleryImage(component, message) {
+  const item = Array.isArray(component.items) ? component.items[0] : null;
+  const url = item?.media?.url;
+
+  if (!url) {
+    return null;
+  }
+
+  if (String(url).startsWith('attachment://')) {
+    const fileName = String(url).replace('attachment://', '');
+    const attachment = message.attachments?.find?.((item) => item.name === fileName);
+
+    return attachment ? importImageUrl(attachment.url, attachment.name) : null;
+  }
+
+  return importImageUrl(url, 'imported-image');
+}
+
+async function importFirstImageAttachment(message) {
+  const attachment = message.attachments?.find?.((item) => String(item.contentType || '').startsWith('image/'));
+
+  return attachment ? importImageUrl(attachment.url, attachment.name) : null;
+}
+
+async function importImageUrl(url, name) {
+  if (!/^https?:\/\//i.test(String(url || ''))) {
+    return null;
+  }
+
+  const response = await fetch(url).catch(() => null);
+
+  if (!response?.ok) {
+    return null;
+  }
+
+  const mimeType = String(response.headers.get('content-type') || '').split(';')[0];
+
+  if (!['image/gif', 'image/jpeg', 'image/png', 'image/webp'].includes(mimeType)) {
+    return null;
+  }
+
+  const buffer = Buffer.from(await response.arrayBuffer());
+
+  if (buffer.length > config.dashboard.maxUploadBytes) {
+    return null;
+  }
+
+  return {
+    name: String(name || 'imported-image'),
+    dataUrl: `data:${mimeType};base64,${buffer.toString('base64')}`,
+  };
+}
+
+function deriveSavedMessageName(blocks) {
+  const textBlock = blocks.find((block) => block.type === 'text' && block.content.trim());
+
+  if (!textBlock) {
+    return '';
+  }
+
+  return textBlock.content
+    .split('\n')[0]
+    .replace(/^#+\s*/, '')
+    .replace(/[*_`~|>]/g, '')
+    .trim()
+    .slice(0, 80);
 }
 
 async function handleGetBot(client, response) {

@@ -46,6 +46,7 @@ const addSpacerButton = document.querySelector('#add-spacer');
 const addButtonButton = document.querySelector('#add-button');
 const newMessageButton = document.querySelector('#new-message');
 const refreshMessagesButton = document.querySelector('#refresh-messages');
+const importMessageButton = document.querySelector('#import-message');
 const saveMessageButton = document.querySelector('#save-message');
 const sendButton = document.querySelector('#send');
 const toastRegion = document.querySelector('#toast-region');
@@ -142,6 +143,7 @@ function bindEvents() {
   refreshMessagesButton.addEventListener('click', () => {
     loadSavedMessages({ showNotification: true }).catch((error) => setSendStatus(error.message, 'error'));
   });
+  importMessageButton.addEventListener('click', handleImportMessage);
   saveMessageButton.addEventListener('click', handleSaveMessage);
   sectionsContainer.addEventListener('input', updatePreview);
   sectionsContainer.addEventListener('change', updatePreview);
@@ -508,6 +510,45 @@ async function handleSaveMessage() {
   messageNameInput.value = savedMessage.name;
   renderSavedMessages();
   setSendStatus(`Saved "${savedMessage.name}".`, 'success');
+}
+
+async function handleImportMessage() {
+  const messageUrl = window.prompt('Paste the Discord message link to import.');
+
+  if (!messageUrl) {
+    return;
+  }
+
+  const name = window.prompt('Saved message name', 'Guidelines.') || '';
+
+  importMessageButton.disabled = true;
+
+  try {
+    const result = await api('/api/import-message', {
+      method: 'POST',
+      body: {
+        url: messageUrl.trim(),
+        name: name.trim(),
+      },
+    });
+
+    state.savedMessages = Array.isArray(result.messages)
+      ? result.messages.map(sanitizeSavedMessage).filter(Boolean)
+      : state.savedMessages;
+    writeLocalSavedMessages(state.savedMessages);
+
+    if (result.message) {
+      state.currentMessageId = result.message.id;
+      applyMessage(result.message);
+    }
+
+    renderSavedMessages();
+    setSendStatus(`Imported "${result.message?.name || 'message'}".`, 'success');
+  } catch (error) {
+    setSendStatus(error.message, 'error');
+  } finally {
+    importMessageButton.disabled = false;
+  }
 }
 
 function loadSavedMessage(id) {
