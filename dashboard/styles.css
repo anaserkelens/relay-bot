@@ -109,6 +109,13 @@ button.secondary:hover {
   color: var(--text);
 }
 
+button.icon-button {
+  width: 42px;
+  min-width: 42px;
+  padding: 0;
+  font-size: 19px;
+}
+
 .shell {
   position: relative;
   z-index: 1;
@@ -281,9 +288,14 @@ h2 {
   justify-content: space-between;
 }
 
-.saved-messages-header > div {
+.saved-messages-title {
   display: grid;
   gap: 2px;
+}
+
+.saved-messages-header > .toolbar-actions {
+  display: flex;
+  flex-wrap: nowrap;
 }
 
 .saved-messages-list {
