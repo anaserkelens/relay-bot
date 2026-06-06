@@ -54,7 +54,9 @@ async function saveSavedMessages(config, messages) {
   }
 
   const filePath = getSavedMessagesPath(config);
-  const sanitizedMessages = ensureSeedMessage(messages.map(sanitizeSavedMessage).filter(Boolean));
+  const incomingMessages = messages.map(sanitizeSavedMessage).filter(Boolean);
+  const storedMessages = await readSavedMessagesFile(filePath);
+  const sanitizedMessages = ensureSeedMessage(mergeSavedMessages(incomingMessages, storedMessages));
 
   await writeSavedMessagesFile(filePath, sanitizedMessages);
 
@@ -104,6 +106,29 @@ function ensureSeedMessage(messages) {
   }
 
   return [seededWelcomeMessage, ...messages];
+}
+
+function mergeSavedMessages(primaryMessages, secondaryMessages) {
+  const merged = [...primaryMessages];
+
+  for (const secondaryMessage of secondaryMessages) {
+    const existingIndex = merged.findIndex((message) => message.id === secondaryMessage.id);
+
+    if (existingIndex === -1) {
+      merged.push(secondaryMessage);
+      continue;
+    }
+
+    if (isNewerSavedMessage(secondaryMessage, merged[existingIndex])) {
+      merged[existingIndex] = secondaryMessage;
+    }
+  }
+
+  return merged;
+}
+
+function isNewerSavedMessage(candidate, current) {
+  return Date.parse(candidate.updatedAt || '') > Date.parse(current.updatedAt || '');
 }
 
 function sanitizeSavedMessage(message) {

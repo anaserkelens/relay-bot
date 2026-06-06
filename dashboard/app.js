@@ -45,6 +45,7 @@ const addDividerButton = document.querySelector('#add-divider');
 const addSpacerButton = document.querySelector('#add-spacer');
 const addButtonButton = document.querySelector('#add-button');
 const newMessageButton = document.querySelector('#new-message');
+const refreshMessagesButton = document.querySelector('#refresh-messages');
 const saveMessageButton = document.querySelector('#save-message');
 const sendButton = document.querySelector('#send');
 const toastRegion = document.querySelector('#toast-region');
@@ -63,6 +64,8 @@ const state = {
   botBannerImage: null,
   savedMessages: [],
   composerInitialized: false,
+  savedMessagesRefreshTimer: null,
+  savedMessagesRequest: null,
 };
 
 const welcomeStarter = `# WELCOME TO INTERFACE SOCIETY
@@ -136,10 +139,18 @@ function bindEvents() {
     resetComposer();
     setActiveTab('messages');
   });
+  refreshMessagesButton.addEventListener('click', () => {
+    loadSavedMessages({ showNotification: true }).catch((error) => setSendStatus(error.message, 'error'));
+  });
   saveMessageButton.addEventListener('click', handleSaveMessage);
   sectionsContainer.addEventListener('input', updatePreview);
   sectionsContainer.addEventListener('change', updatePreview);
   buttonsContainer.addEventListener('input', updatePreview);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && getActiveTab() === 'messages' && !dashboardView.hidden) {
+      loadSavedMessages({ silent: true }).catch(() => null);
+    }
+  });
 }
 
 async function handleLogin(event) {
@@ -202,6 +213,7 @@ async function checkApiStatus() {
 async function handleLogout() {
   await api('/api/logout', { method: 'POST', body: {} }).catch(() => null);
   clearSessionToken();
+  stopSavedMessagesSync();
   showLogin();
 }
 
@@ -428,8 +440,34 @@ function setActiveTab(tab) {
   }
 
   if (nextTab === 'messages' && !dashboardView.hidden) {
+    startSavedMessagesSync();
     loadSavedMessages().catch((error) => setSendStatus(error.message, 'error'));
+  } else {
+    stopSavedMessagesSync();
   }
+}
+
+function startSavedMessagesSync() {
+  if (state.savedMessagesRefreshTimer) {
+    return;
+  }
+
+  state.savedMessagesRefreshTimer = window.setInterval(() => {
+    if (document.hidden || dashboardView.hidden || getActiveTab() !== 'messages') {
+      return;
+    }
+
+    loadSavedMessages({ silent: true }).catch(() => null);
+  }, 5000);
+}
+
+function stopSavedMessagesSync() {
+  if (!state.savedMessagesRefreshTimer) {
+    return;
+  }
+
+  window.clearInterval(state.savedMessagesRefreshTimer);
+  state.savedMessagesRefreshTimer = null;
 }
 
 function handleSavedMessageClick(event) {
@@ -532,8 +570,25 @@ function applyMessage(message) {
   updatePreview();
 }
 
-async function loadSavedMessages() {
-  const localMessages = readLocalSavedMessages();
+async function loadSavedMessages(options = {}) {
+  if (state.savedMessagesRequest) {
+    return state.savedMessagesRequest;
+  }
+
+  state.savedMessagesRequest = loadSavedMessagesFromServer(options).finally(() => {
+    state.savedMessagesRequest = null;
+  });
+
+  return state.savedMessagesRequest;
+}
+
+async function loadSavedMessagesFromServer(options = {}) {
+  const localMessages = options.migrateLocal === false ? [] : readLocalSavedMessages();
+  const shouldShowLoadingState = !options.silent;
+
+  if (shouldShowLoadingState) {
+    refreshMessagesButton.disabled = true;
+  }
 
   try {
     const result = await api('/api/saved-messages');
@@ -547,13 +602,23 @@ async function loadSavedMessages() {
     if (localMessages.length > 0 && (await persistSavedMessages(false))) {
       clearLocalSavedMessages();
     }
+
+    if (options.showNotification) {
+      setSendStatus('Saved messages refreshed.', 'success');
+    }
   } catch (error) {
     if (localMessages.length > 0) {
       state.savedMessages = ensureWelcomeMessage(localMessages);
       renderSavedMessages();
     }
 
-    throw error;
+    if (!options.silent) {
+      throw error;
+    }
+  } finally {
+    if (shouldShowLoadingState) {
+      refreshMessagesButton.disabled = false;
+    }
   }
 }
 
